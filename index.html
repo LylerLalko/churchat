@@ -48,23 +48,36 @@
 <aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub">"slogan"</div></div><button class="btn icon ghost" id="closeSide" aria-label="Close menu" style="margin-left:auto;display:none"><svg class="ico"><use href="#x"/></svg></button></div>
 <section><div class="sidebar-heading"><span class="eyebrow">Your rooms</span><button class="btn icon ghost" id="addRoom" title="Join a room"><svg class="ico"><use href="#plus"/></svg></button></div><div class="room-list" id="roomList"></div></section>
 <div class="sidebar-bottom"><div class="connection"><span class="dot"></span><span id="connectionText">Connecting…</span></div><div class="profile"><div class="avatar" id="profileAvatar">G</div><div class="profile-info"><div class="profile-name" id="profileName">Guest</div><div class="profile-status" id="profileHandle">Account</div></div><button class="btn icon ghost" id="profileSettings" aria-label="Settings"><svg class="ico"><use href="#settings-icon"/></svg></button></div></div></aside>
-<main class="main"><header class="topbar"><div class="room-title"><button class="btn icon ghost mobile-menu" id="openSide" aria-label="Open room list"><svg class="ico"><use href="#menu"/></svg></button><div><h1 id="roomTitle"># general</h1><div class="room-description" id="roomDesc">The public lobby</div><div class="presence-summary" id="presenceSummary">Checking who’s online…</div></div></div>
+<main class="main"><header class="topbar"><div class="room-title"><button class="btn icon ghost mobile-menu" id="openSide" aria-label="Open room list"><svg class="ico"><use href="#menu"/></svg></button><div><h1 id="roomTitle"># general</h1><div class="room-description" id="roomDesc">The public lobby · a good place to start</div><div class="presence-summary" id="presenceSummary">Checking who’s online…</div></div></div>
 <div class="top-actions"><button class="btn" id="searchButton" title="Search messages (Ctrl+K)">Search</button><button class="btn" id="dmButton" title="Direct messages">DMs</button><button class="btn" id="toolsButton" title="Chat tools">Tools</button><button class="btn" id="invite"><svg class="ico"><use href="#link"/></svg><span class="action-label">Invite</span></button><button class="btn icon" id="theme" title="Toggle theme"><svg class="ico"><use href="#moon"/></svg></button><button class="btn icon" id="settings" title="Settings"><svg class="ico"><use href="#settings-icon"/></svg></button></div></header>
 <div class="notice hidden" id="siteBanner" style="border-radius:0;border-left:0;border-right:0"></div>
 <div class="content"><section class="conversation"><div class="messages" id="messages"></div><div class="typing-indicator" id="typingIndicator" aria-live="polite"></div><div id="replyingTo" class="notice hidden" style="margin:0 clamp(14px,4vw,54px);display:flex;justify-content:space-between;align-items:center;gap:10px"><span id="replyingToText"></span><button class="btn" type="button" id="cancelReply">Cancel reply</button></div><div class="composer-wrap"><form class="composer" id="messageForm"><textarea id="message" rows="1" maxlength="500" placeholder="Message #general…" aria-label="Write a message"></textarea><div class="composer-bottom"><div class="composer-hint">Enter to send · Shift + Enter for a new line</div><div style="display:flex;gap:5px;align-items:center"><button type="button" class="btn icon ghost" id="emoji" title="Insert emoji"><svg class="ico"><use href="#smile"/></svg></button><button type="submit" class="btn primary send-btn" aria-label="Send message"><svg class="ico"><use href="#send"/></svg></button></div></div></form></div></section><aside class="members" aria-label="Room members"><h3 id="membersHeading">Members</h3><div id="membersList"><div class="notice">Loading members…</div></div></aside>
 </div></main></div>
 <div id="modal"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
-(()=>{const $=id=>document.getElementById(id);const API='https://shiny-river-e04e.lylerlalko.workers.dev';const TOKEN_KEY='churchat-session-token';let sessionToken='';const S={mode:'in',user:'Guest',role:'user',room:'general',rooms:[{id:'general',name:'general',is_public:1,is_member:1}],theme:'light',messages:{},profile:{displayName:'',bio:''},unreadCounts:{},loadedRooms:new Set(),siteSettings:{},replyTo:null};S.messages.general=[];
+(()=>{const $=id=>document.getElementById(id);const API='https://shiny-river-e04e.lylerlalko.workers.dev';const TOKEN_KEY='churchat-session-token';let sessionToken='';const S={mode:'in',user:'Guest',role:'user',room:'general',rooms:[{id:'general',name:'general',is_public:1,is_member:1}],theme:'light',messages:{},profile:{displayName:'',bio:''},unreadCounts:{},loadedRooms:new Set(),siteSettings:{},replyTo:null,tabNewMessage:false,dmUnreadTotal:0};S.messages.general=[];
 let messagePollTimer=null, messageLoadBusy=false, messageLoadQueued=null, lastMessageFingerprint='', syncWasLoaded=false;
 let unreadRefreshTimer=null, activeSearchTimer=null, siteSettingsLastFetch=0, lastUnreadRefreshAt=0, lastPresenceRefreshAt=0, lastHeartbeatAt=0, lastHeartbeatRoom='', lastReadSentCursors=Object.create(null);
 let lastUserActivityAt=Date.now(), syncCursors=Object.create(null), syncCycles=Object.create(null), syncIdentityEpoch=0;
 let presenceTimer=null, heartbeatTimer=null, typingRefreshTimer=null, typingStopTimer=null, typingActive=false, presenceLoadBusy=false;
 let dmPollTimer=null, dmCurrent=null;
 const ico=n=>`<svg class="ico" aria-hidden="true"><use href="#${n}"/></svg>`, init=n=>(n||'?').trim().slice(0,1).toUpperCase(), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function tabHasUnread(){return !!S.tabNewMessage||Number(S.dmUnreadTotal)>0||Object.values(S.unreadCounts||{}).some(v=>Number(v)>0)}
+function updateTabFavicon(){
+ const existing=document.getElementById('churchat-tab-unread-favicon');
+ if(!tabHasUnread()){if(existing)existing.remove();return}
+ const link=existing||document.createElement('link');
+ link.id='churchat-tab-unread-favicon';link.rel='icon';link.type='image/svg+xml';link.sizes='any';
+ const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8658df"/><stop offset="1" stop-color="#40118e"/></linearGradient><linearGradient id="bubble" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9ddff"/></linearGradient></defs><rect width="128" height="128" rx="31" fill="url(#bg)"/><path d="M18 61c0-23 19-41 43-41s43 18 43 41-19 41-43 41c-7 0-14-2-20-5L23 106l4-17C21 81 18 71 18 61Z" fill="url(#bubble)"/><path d="M59 37a4 4 0 0 1 4 4v12h12a4 4 0 0 1 0 8H63v20a4 4 0 0 1-8 0V61H43a4 4 0 0 1 0-8h12V41a4 4 0 0 1 4-4Z" fill="#5723ac"/><g stroke="#d7c3ff" stroke-width="5" stroke-linecap="round" fill="none"><path d="M91 37l7-7"/><path d="M96 53h10"/><path d="M91 69l7 7"/></g><circle cx="103" cy="25" r="18" fill="#ef4444" stroke="#fff" stroke-width="7"/></svg>';
+ link.href='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+ if(!existing)document.head.appendChild(link);
+}
+function setTabNewMessage(){S.tabNewMessage=true;updateTabFavicon()}
+function acknowledgeTabMessages(){S.tabNewMessage=false;updateTabFavicon()}
+function setDmUnreadTotal(rows){S.dmUnreadTotal=(rows||[]).reduce((total,c)=>total+Math.max(0,Number(c.unreadCount)||0),0);updateTabFavicon()}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),2600)}
 function setTheme(t){S.theme=t;document.documentElement.dataset.theme=t; $('theme').innerHTML=ico(t==='light'?'moon':'sun');try{localStorage.setItem('churchat-theme',t)}catch(e){}}
-try{const t=localStorage.getItem('churchat-theme');if(t==='dark'||t==='light')S.theme=t}catch(e){}setTheme(S.theme);
+try{const t=localStorage.getItem('churchat-theme');if(t==='dark'||t==='light')S.theme=t}catch(e){}setTheme(S.theme);updateTabFavicon();
 $('theme').onclick=()=>setTheme(S.theme==='light'?'dark':'light');
 function authMode(m){S.mode=m;let sign=m==='in';$('tabIn').classList.toggle('active',sign);$('tabUp').classList.toggle('active',!sign);$('authTitle').textContent=sign?'Good to see you.':'Make yourself at home.';$('authSubtitle').textContent=sign?'Sign in to pick up the conversation.':'Create an account to join the conversation.';$('authSubmit').textContent=sign?'Sign in →':'Create account →';$('password').autocomplete=sign?'current-password':'new-password';$('authSwitch').innerHTML=sign?'New around here? <button class="text-button" id="switchAuth">Create an account</button>':'Already have an account? <button class="text-button" id="switchAuth">Sign in</button>'; $('switchAuth').onclick=()=>authMode(sign?'up':'in')}
 $('tabIn').onclick=()=>authMode('in');$('tabUp').onclick=()=>authMode('up');$('switchAuth').onclick=()=>authMode('up');
@@ -79,7 +92,7 @@ function resetAccountCaches(){
  S.messages={general:[]};
  S.rooms=[{id:'general',name:'general',is_public:1,is_member:1}];
  S.room='general';
- S.unreadCounts={};
+ S.unreadCounts={};S.dmUnreadTotal=0;S.tabNewMessage=false;updateTabFavicon();
  S.loadedRooms.clear();
  S.profile={displayName:'',bio:''};
  S.replyTo=null;
@@ -94,7 +107,7 @@ $('authForm').onsubmit=async e=>{e.preventDefault();let n=$('username').value.tr
 async function restoreSession(){try{const saved=localStorage.getItem(TOKEN_KEY);if(!saved)return;sessionToken=saved;const data=await api('/api/me');const user=data.user||data;const name=user.username;if(!name)throw new Error('Invalid session response');enter(name,user.role||'user',user.id||'');$('connectionText').textContent='Connected'}catch(e){clearSession();$('connectionText').textContent='Not signed in'}}
 function roomById(id){return S.rooms.find(r=>r.id===id)||{id,name:id,is_public:id==='general'?1:0}}
 function roomName(id){return roomById(id).name||id}
-async function loadRooms(){if(!sessionToken)return;const data=await api('/api/rooms');const rooms=Array.isArray(data.rooms)?data.rooms:[];if(!rooms.some(r=>r.id==='general'))rooms.unshift({id:'general',name:'general',is_public:1,is_member:1});S.rooms=rooms.filter(r=>Number(r.is_member)===1||r.id==='general');S.unreadCounts=Object.fromEntries(S.rooms.map(r=>[r.id,Number(r.unread_count)||0]));lastUnreadRefreshAt=Date.now();if(!S.rooms.some(r=>r.id===S.room))S.room='general';renderRooms();renderMessages()}
+async function loadRooms(){if(!sessionToken)return;const data=await api('/api/rooms');const rooms=Array.isArray(data.rooms)?data.rooms:[];if(!rooms.some(r=>r.id==='general'))rooms.unshift({id:'general',name:'general',is_public:1,is_member:1});S.rooms=rooms.filter(r=>Number(r.is_member)===1||r.id==='general');S.unreadCounts=Object.fromEntries(S.rooms.map(r=>[r.id,Number(r.unread_count)||0]));lastUnreadRefreshAt=Date.now();updateTabFavicon();if(!S.rooms.some(r=>r.id===S.room))S.room='general';renderRooms();renderMessages()}
 function renderRooms(){$('roomList').innerHTML=S.rooms.map(r=>{const unread=Number(S.unreadCounts[r.id]??r.unread_count??0);return `<button class="room-btn ${r.id===S.room?'active':''}" data-room="${esc(r.id)}">${ico(r.id==='general'||Number(r.is_public)===1?'hash':'lock')}<span class="room-name">${esc(r.name)}</span>${unread>0&&r.id!==S.room?`<span class="room-count unread">${unread>99?'99+':unread}</span>`:''}</button>`}).join('');$('roomList').querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>changeRoom(b.dataset.room))}
 function changeRoom(id){if(typingActive)sendTyping(false);try{localStorage.setItem('churchat-draft:'+S.room,$('message').value||'')}catch(e){}clearReply();S.room=id;const r=roomById(id);$('roomTitle').textContent=(id==='general'||Number(r.is_public)===1?'# ':'🔒 ')+r.name;$('roomDesc').textContent=r.topic|| (id==='general'?'The public lobby · a good place to start':(Number(r.is_public)===1?'Public room · open to everyone':'Private room · invite-only'));$('message').placeholder='Message '+(id==='general'||Number(r.is_public)===1?'#':'🔒')+r.name+'…';try{$('message').value=localStorage.getItem('churchat-draft:'+id)||'';$('message').dispatchEvent(new Event('input'))}catch(e){}renderRooms();renderMessages();if(sessionToken)loadMessages(true);closeSide()}
 const REACTION_CHOICES=['👍','❤️','😂','😮','😢','🎉','🔥','👀','👎','🙏'];
@@ -147,7 +160,7 @@ async function loadMessages(forceRender=false, useIncremental=null){
   const cycle=(syncCycles[roomId]||0)+1;
   syncCycles[roomId]=cycle;
   const fullSync=useIncremental===false||forceRender||!roomLoaded||(cycle%12===0)||!(cursor.createdAt>0&&cursor.rowId>0);
-  const includeUnread=(Date.now()-lastUnreadRefreshAt)>=90000;
+  const includeUnread=!!forceRender||(Date.now()-lastUnreadRefreshAt)>=90000;
   const includeSettings=(Date.now()-siteSettingsLastFetch)>=120000;
   const includePresence=forceRender||!roomLoaded||(Date.now()-lastPresenceRefreshAt)>=15000;
   const shouldHeartbeat=(Date.now()-lastHeartbeatAt)>=30000||lastHeartbeatRoom!==roomId;
@@ -230,6 +243,8 @@ async function loadMessages(forceRender=false, useIncremental=null){
     lastUnreadRefreshAt=Date.now();
     renderRooms();
   }
+  if(typeof data.unreadDMCount==='number')S.dmUnreadTotal=Math.max(0,Number(data.unreadDMCount)||0);
+  updateTabFavicon();
   if(data.settings){
     S.siteSettings=data.settings;
     renderSiteBanner();
@@ -267,7 +282,8 @@ function startMessageSync(){
 function pollingDelay(){
  if(document.hidden){
   const wantsNotifications=localStorage.getItem('churchat-notifications')==='on'&&('Notification' in window)&&Notification.permission==='granted';
-  return wantsNotifications?60000:0;
+  // Background sync stays low frequency but continues so unread counts and the tab favicon can update.
+  return wantsNotifications?60000:120000;
  }
  const recentlyActive=(Date.now()-lastUserActivityAt)<90000;
  // Fast while the person is actively chatting; slower for a visible but idle tab.
@@ -294,8 +310,10 @@ document.addEventListener('visibilitychange',()=>{
   return;
  }
  lastUserActivityAt=Date.now();
+ acknowledgeTabMessages();
  loadMessages(true,false).finally(scheduleMessagePolling);
 });
+window.addEventListener('focus',()=>{if(document.hidden)return;acknowledgeTabMessages();if(sessionToken){lastUserActivityAt=Date.now();loadMessages(true,false).finally(scheduleMessagePolling)}});
 function stopMessageSync(){
  if(messagePollTimer){clearTimeout(messagePollTimer);messagePollTimer=null}
  messageLoadQueued=null;
@@ -330,6 +348,7 @@ async function showDirectMessages(){
  try{
   const data=await api('/api/dms');
   const rows=data.conversations||[];
+  setDmUnreadTotal(rows);
   const list=rows.length?`<div class="dm-list">${rows.map(c=>`<button class="dm-list-item" data-dm-open="${esc(c.id)}"><div class="avatar">${esc(init(c.otherDisplayName||c.otherUsername))}</div><div class="dm-list-main"><div class="dm-list-name">${esc(c.otherDisplayName||c.otherUsername)} <span class="muted" style="font-weight:500">@${esc(c.otherUsername)}</span></div><div class="dm-list-last">${c.blocked?'Messaging blocked · ':''}${esc(c.lastSenderId===S.userId?'You: ':'')}${esc(c.lastMessage||'No messages yet.')}</div></div>${Number(c.unreadCount)>0?`<span class="dm-badge">${Number(c.unreadCount)>99?'99+':Number(c.unreadCount)}</span>`:''}</button>`).join('')}</div>`:'<div class="notice" style="margin-top:12px">No direct conversations yet. Enter a username above to start one.</div>';
   modal('Direct messages',`<p class="muted" style="margin-top:0">Private one-to-one conversations. Only the two participants can access each thread.</p><div class="field"><label for="dmStartUsername">Start a conversation by username</label><div style="display:flex;gap:8px"><input id="dmStartUsername" maxlength="20" autocomplete="off" placeholder="Exact username" style="flex:1;min-width:0;border:1px solid var(--border);border-radius:11px;padding:10px 12px;background:var(--surface);color:var(--text)"><button class="btn primary" id="dmStartButton">Message</button></div></div><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:18px"><strong>Conversations</strong><button class="btn" id="dmRefreshList">Refresh</button></div>${list}`,()=>{
    const start=async()=>{const name=$('dmStartUsername').value.trim();if(!name){toast('Enter a username.');return}await startDirectMessage(name)};
@@ -340,6 +359,7 @@ async function showDirectMessages(){
   });
  }catch(e){toast(e.message||'Could not load direct messages.');}
 }
+async function refreshDmUnreadSummary(){if(!sessionToken)return;try{const data=await api('/api/dms');setDmUnreadTotal(data.conversations||[])}catch(e){/* Keep the last known unread count during transient errors. */}}
 async function startDirectMessage(username){
  const data=await api('/api/dms',{username});
  if(!data.conversation)throw new Error('The server did not return a conversation.');
@@ -374,7 +394,7 @@ async function refreshDirectMessage(state){
   if(dmCurrent!==state)return;
   state.blocked=!!data.conversation?.blocked;
   const seen=new Set(state.messages.map(m=>String(m.id)));
-  for(const m of data.messages||[]){if(!seen.has(String(m.id))){state.messages.push(m);seen.add(String(m.id))}}
+  for(const m of data.messages||[]){if(!seen.has(String(m.id))){state.messages.push(m);seen.add(String(m.id));if(String(m.sender_id||'')!==String(S.userId||'')&&(document.hidden||!document.hasFocus()))setTabNewMessage()}}
   state.cursorRowId=Math.max(Number(state.cursorRowId)||0,Number(data.cursorRowId)||0);
   renderDmThread(state,false);
  }catch(e){/* Don't toast on every background poll; manual send errors remain visible. */}
@@ -414,7 +434,7 @@ async function openDirectMessage(conversation){
  const c=initial.conversation||conversation;
  const state={id,otherUserId:c.otherUserId||conversation.otherUserId||'',otherUsername:c.otherUsername||conversation.otherUsername||'User',otherDisplayName:c.otherDisplayName||conversation.otherDisplayName||'',blocked:!!c.blocked,messages:initial.messages||[],cursorRowId:Number(initial.cursorRowId)||0,busy:false};
  modal('DM · '+(state.otherDisplayName||state.otherUsername),`<div class="muted" style="margin-bottom:8px">Private conversation with @${esc(state.otherUsername)}. Messages are visible only to the two participants.</div><div id="dmBlockedNotice" class="notice ${state.blocked?'':'hidden'}">Messaging is currently blocked because one of these accounts has blocked the other. You can still view previous messages.</div><div id="dmMessages" class="dm-thread-messages" role="log" aria-live="polite"></div><form id="dmComposerForm" class="dm-compose ${state.blocked?'hidden':''}"><textarea id="dmComposer" maxlength="500" rows="2" placeholder="Message @${esc(state.otherUsername)}…" aria-label="Write a direct message"></textarea><button class="btn primary" type="submit">Send</button></form><div class="muted" style="font-size:10px;margin-top:6px">Enter to send · Shift+Enter for a new line</div>`,()=>{
-   dmCurrent=state;renderDmThread(state,true);
+   dmCurrent=state;renderDmThread(state,true);refreshDmUnreadSummary();
    $('dmComposerForm').onsubmit=e=>{e.preventDefault();const input=$('dmComposer');const text=input.value.trim();if(!text)return;input.value='';input.style.height='auto';sendDirectMessage(state,text).catch(err=>toast(err.message||'Could not send.'))};
    $('dmComposer').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('dmComposerForm').requestSubmit()}};
    $('dmComposer').oninput=e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,110)+'px'};
@@ -499,7 +519,7 @@ async function showRoomTopic(){const r=roomById(S.room);modal('Room topic',`<p c
 async function loadPublicSiteSettings(){try{const data=await api('/api/site-settings',undefined,false);S.siteSettings=data.settings||{};renderSiteBanner();siteSettingsLastFetch=Date.now()}catch(e){}}
 function renderSiteBanner(){const b=$('siteBanner');const text=S.siteSettings.announcement||'';const maintenance=S.siteSettings.maintenance_mode==='true';if(text||maintenance){b.classList.remove('hidden');b.classList.add('site-announcement');b.textContent=(maintenance?'ChurChat is in maintenance mode. Normal chat actions are temporarily unavailable. ':'')+text}else b.classList.add('hidden')}
 async function enableNotifications(){if(!('Notification'in window)){toast('This browser does not support notifications.');return}try{const p=await Notification.requestPermission();if(p==='granted'){localStorage.setItem('churchat-notifications','on');toast('Browser notifications enabled.')}else toast('Notification permission was not granted.')}catch(e){toast('Could not enable notifications.')}}
-function notifyIncoming(m){if(!document.hidden&&document.hasFocus())return;if(localStorage.getItem('churchat-notifications')!=='on'||!('Notification'in window)||Notification.permission!=='granted')return;const mention=(m.text||'').toLowerCase().includes('@'+String(S.user).toLowerCase());try{new Notification(mention?'You were mentioned in ChurChat':'New ChurChat message',{body:(m.name||m.username)+': '+String(m.text||'').slice(0,120),tag:'churchat-'+m.id})}catch(e){}}
+function notifyIncoming(m){const away=document.hidden||!document.hasFocus();if(away)setTabNewMessage();if(!away)return;if(localStorage.getItem('churchat-notifications')!=='on'||!('Notification'in window)||Notification.permission!=='granted')return;const mention=(m.text||'').toLowerCase().includes('@'+String(S.user).toLowerCase());try{new Notification(mention?'You were mentioned in ChurChat':'New ChurChat message',{body:(m.name||m.username)+': '+String(m.text||'').slice(0,120),tag:'churchat-'+m.id})}catch(e){}}
 function showTools(){modal('ChurChat tools',`<p class="muted">Tools for day-to-day chat, moderation, and account security. Every sensitive operation is checked by the Worker.</p><div class="feature-grid"><button class="btn" id="toolPolls">Room polls</button><button class="btn" id="toolPins">Pinned messages</button><button class="btn" id="toolSaved">Saved messages</button><button class="btn" id="toolBlocked">Blocked users</button><button class="btn" id="toolStatus">Set custom status</button><button class="btn" id="toolTopic">Room topic</button><button class="btn" id="toolNotify">Browser notifications</button><button class="btn" id="toolShortcuts">Keyboard shortcuts</button>${S.role==='admin'?'<button class="btn" id="toolReports">Moderation reports</button><button class="btn" id="toolAudit">Admin audit log</button><button class="btn" id="toolRoomDelete">Delete current room</button><button class="btn" id="toolSessions">Manage sessions</button>':''}</div>`,()=>{const run=(id,fn)=>{if($(id))$(id).onclick=()=>{closeModal();fn()}};run('toolPolls',showPolls);run('toolPins',showPins);run('toolSaved',showSaved);run('toolBlocked',showBlockedUsers);run('toolStatus',settings);run('toolTopic',showRoomTopic);run('toolNotify',enableNotifications);run('toolShortcuts',()=>modal('Keyboard shortcuts',`<div class="notice"><strong>Ctrl / Cmd + K</strong> — Search messages<br><strong>Enter</strong> — Send message<br><strong>Shift + Enter</strong> — New line<br><strong>Escape</strong> — Close dialog<br><strong>Tools</strong> — Polls, pins, saved messages, reports and settings</div>`));run('toolReports',showReports);run('toolAudit',showAudit);run('toolRoomDelete',deleteRoomPrompt);run('toolSessions',showSessions)})}
 $('searchButton').onclick=showSearch;$('dmButton').onclick=showDirectMessages;$('toolsButton').onclick=showTools;
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();showSearch()}if(e.key==='Escape')closeModal()});
