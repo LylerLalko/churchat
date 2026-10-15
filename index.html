@@ -296,7 +296,7 @@ const STATIC_AVATAR_OVERRIDES = {
 
   // Add more people below
   lylerlalko: { src: './assets/avatars/lylerlalko.webp' },
-  ded_zudley_: { src: './assets/avatars/ded_zudley_.jpg' },
+  username2: { src: './assets/avatars/username2.png' },
   username3: { src: './assets/avatars/username3.jpg' },
 };
 
@@ -452,7 +452,7 @@ function targetIsStillLatestSpamtonMessage(target){
  }
  if(!dmCurrent||String(dmCurrent.id)!==String(target.conversationId))return false;
  const ordered=orderedSpamtonDmMessages(dmCurrent.messages);const latest=ordered.length?ordered[ordered.length-1]:null;
- return !!latest&&String(latest.id)===String(target.id)&&spamtonAccount(latest.username||latest.sender_username||'')&&!latest.deleted_at&&!latest.pending&&!latest.failed&&String(latest.sender_id||'')!==String(S.userId||'');
+ return !!latest&&String(latest.id)===String(target.id)&&spamtonAccount(latest.username||latest.sender_username||'')&&!latest.deleted_at&&!latest.pending&&!latest.failed;
 }
 function retryPendingSpamtonAnimations(){
  if(hasActiveSpamtonAnimation())return;
@@ -488,7 +488,6 @@ function maybeAnimateLatestSpamtonRoomMessage(list){
  const message=latestSpamtonRoomMessage(list);
  if(!message||message.deletedAt||message.clientPending||message.optimisticStatus==='sending'||message.optimisticStatus==='failed'||message.id==null)return;
  if(!spamtonAccount(message.username||message.name))return;
- if(String(message.username||'').trim().replace(/^@/,'').toLowerCase()===String(S.user||'').trim().toLowerCase())return;
  const target=makeSpamtonTarget('chat',message.id,message.text,S.room,'');
  if(spamtonAutoStartedThisPage.has(target.key)||spamtonAnimationStates.has(target.key)||pendingSpamtonAnimations.has(target.key)||hasActiveSpamtonAnimation())return;
  startSpamtonAnimation(target,false,true);
@@ -504,7 +503,7 @@ function maybeAnimateLatestSpamtonDmMessage(messages,state){
  const ordered=orderedSpamtonDmMessages(messages),latest=ordered.length?ordered[ordered.length-1]:null;
  if(!latest||latest.deleted_at||latest.pending||latest.failed||latest.id==null)return;
  const sender=String(latest.username||latest.sender_username||'').trim().replace(/^@/,'').toLowerCase();
- if(sender!=='spamton'||String(latest.sender_id||'')===String(S.userId||''))return;
+ if(sender!=='spamton')return;
  const target=makeSpamtonTarget('dm',latest.id,latest.text,'',state.id);
  if(spamtonAutoStartedThisPage.has(target.key)||spamtonAnimationStates.has(target.key)||pendingSpamtonAnimations.has(target.key)||hasActiveSpamtonAnimation())return;
  startSpamtonAnimation(target,false,true);
