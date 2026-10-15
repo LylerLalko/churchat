@@ -15,6 +15,10 @@
 .auth-screen{min-height:100vh;display:grid;place-items:center;padding:22px;background:radial-gradient(ellipse at 50% 0%,var(--soft),var(--bg) 58%)}.auth-card{width:min(100%,420px);background:var(--surface);border:1px solid var(--border);border-radius:24px;box-shadow:var(--shadow);padding:clamp(22px,5vw,34px)}.auth-brand{justify-content:center;margin-bottom:26px}.auth-card h1{text-align:center;font-size:25px;letter-spacing:-.055em;margin:0 0 5px}.auth-subtitle{text-align:center;color:var(--muted);margin:0 0 23px;font-size:12px}.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--surface2);border-radius:12px;margin-bottom:18px}.auth-tab{border:0;border-radius:9px;padding:9px;color:var(--muted);background:transparent;font-size:12px;font-weight:750}.auth-tab.active{background:var(--surface);color:var(--text);box-shadow:0 2px 7px #140a280f}.auth-form{display:grid;gap:13px}.auth-switch{text-align:center;color:var(--muted);font-size:11px;margin-top:16px}.text-button{border:0;padding:0;background:transparent;color:var(--accent);font-weight:750}
 @media(max-width:900px){.members{display:none}}@media(max-width:650px){.sidebar{position:fixed;inset:0 auto 0 0;z-index:30;box-shadow:var(--shadow);transform:translateX(-105%);transition:transform .2s}.sidebar.open{transform:translateX(0)}.mobile-menu{display:inline-flex}.topbar{min-height:62px;padding:0 10px;gap:6px}.top-actions{max-width:66vw;min-width:0;overflow-x:auto;scrollbar-width:none;flex:0 1 auto}.top-actions::-webkit-scrollbar{display:none}.top-actions .btn{flex:0 0 auto;padding:7px 8px}.top-actions .bug-report-launch{font-size:11px}.top-actions .bug-report-launch .action-label{display:inline}.top-actions .action-label{display:none}.messages{padding:18px 14px;gap:16px}.composer-wrap{padding:8px 10px 12px}.composer-hint{display:none}.room-description{display:none}.welcome{padding-top:12px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+@font-face{font-family:"ChurChatSpamtonFont";src:url("./assets/fonts/spamton.otf") format("opentype");font-style:normal;font-weight:400;font-display:swap}
+.message[data-avatar-username="spamton" i] .message-text,
+.dm-row[data-sender-username="spamton"] .dm-text,
+.reply-preview[data-reply-username="spamton" i]{font-family:"ChurChatSpamtonFont",system-ui,sans-serif!important}
 </style>
 <style id="churchat-customization-css">
 html[data-palette="ocean"]{--bg:#f3f7fc;--surface:#fff;--surface2:#eaf1fa;--surface3:#dce8f6;--text:#202c3b;--muted:#718094;--border:#dfe7f0;--accent:#3979c6;--accenthover:#2866ae;--soft:#e3efff;--accenttext:#204d81;--shadow:0 18px 50px #243e5b14}
@@ -56,7 +60,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <symbol id="spark" viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3zM19 16l1 2.5 2.5 1-2.5 1L19 23l-1-2.5-2.5-1 2.5-1L19 16z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
 </svg>
 <div id="auth" class="auth-screen"><div class="auth-card">
-<div class="brand auth-brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub">"slogan 🔥"</div></div></div>
+<div class="brand auth-brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub">A little corner to talk</div></div></div>
 <h1 id="authTitle">Good to see you.</h1><p class="auth-subtitle" id="authSubtitle">Sign in to pick up the conversation.</p>
 <div class="auth-tabs"><button class="auth-tab active" id="tabIn">Sign in</button><button class="auth-tab" id="tabUp">Create account</button></div>
 <form class="auth-form" id="authForm"><div class="field"><label for="username">Username</label><input id="username" autocomplete="username" maxlength="20" placeholder="Choose a username" required></div><div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="Enter your password" required></div><button class="btn primary" id="authSubmit" style="width:100%;padding:12px">Sign in →</button></form>
@@ -66,7 +70,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 </div></div>
 <div id="app" class="app hidden">
-<aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub">"slogan 🔥"</div></div><button class="btn icon ghost" id="closeSide" aria-label="Close menu" style="margin-left:auto;display:none"><svg class="ico"><use href="#x"/></svg></button></div>
+<aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub">A little corner to talk</div></div><button class="btn icon ghost" id="closeSide" aria-label="Close menu" style="margin-left:auto;display:none"><svg class="ico"><use href="#x"/></svg></button></div>
 <section><div class="sidebar-heading"><span class="eyebrow">Your rooms</span><button class="btn icon ghost" id="addRoom" title="Join a room"><svg class="ico"><use href="#plus"/></svg></button></div><div class="room-list" id="roomList"></div></section>
 <div class="sidebar-bottom"><div class="connection"><span class="dot"></span><span id="connectionText">Connecting…</span></div><div class="profile"><div class="avatar" id="profileAvatar">G</div><div class="profile-info"><div class="profile-name" id="profileName">Guest</div><div class="profile-status" id="profileHandle">Account</div></div><button class="btn icon ghost" id="profileSettings" aria-label="Settings"><svg class="ico"><use href="#settings-icon"/></svg></button></div></div></aside>
 <main class="main"><header class="topbar"><div class="room-title"><button class="btn icon ghost mobile-menu" id="openSide" aria-label="Open room list"><svg class="ico"><use href="#menu"/></svg></button><div><h1 id="roomTitle"># general</h1><div class="room-description" id="roomDesc">The public lobby · a good place to start</div><div class="presence-summary" id="presenceSummary">Checking who’s online…</div></div></div>
@@ -127,36 +131,7 @@ function resetAccountCaches(){
 }
 function safeAvatarColor(value){const color=String(value||'').trim().toLowerCase();return /^#[0-9a-f]{6}$/.test(color)?color:'#8b72c7'}
 function avatarForeground(color){const c=safeAvatarColor(color);const r=parseInt(c.slice(1,3),16)/255,g=parseInt(c.slice(3,5),16)/255,b=parseInt(c.slice(5,7),16)/255;const lum=.2126*r+.7152*g+.0722*b;return lum<.54?'#ffffff':'#241b30'}
-const STATIC_AVATAR_OVERRIDES = {
-  // Existing custom avatar
-  spamton: { src: './spamton.webp' },
-
-  // Add more people below
-  lylerlalko: { src: './assets/avatars/lylerlalko.webp' },
-  username2: { src: './assets/avatars/username2.png' },
-  username3: { src: './assets/avatars/username3.jpg' },
-};
-
-function avatarContent(username, color = '#8b72c7', accountUsername = '') {
-  const account = String(accountUsername || username || '')
-    .trim()
-    .replace(/^@/, '')
-    .toLowerCase();
-
-  const override = STATIC_AVATAR_OVERRIDES[account];
-
-  if (override && typeof override.src === 'string') {
-    return '<img class="static-avatar-image" src="' +
-      esc(override.src) +
-      '" alt="" loading="lazy" decoding="async">';
-  }
-
-  const c = safeAvatarColor(color);
-
-  return '<span class="avatar-initial" style="background-color:' +
-    c + ';color:' + avatarForeground(c) + '">' +
-    esc(init(username)) + '</span>';
-}
+function avatarContent(username,color='#8b72c7',accountUsername=''){const account=String(accountUsername||username||'').trim().replace(/^@/,'').toLowerCase();if(account==='spamton')return '<img class="static-avatar-image" src="./spamton.webp" alt="" loading="lazy" decoding="async">';const c=safeAvatarColor(color);return '<span class="avatar-initial" style="background-color:'+c+';color:'+avatarForeground(c)+'">'+esc(init(username))+'</span>'}
 function updateSelfIdentity(){const shown=S.profile.displayName||S.user;$('profileName').textContent=shown;$('profileHandle').textContent='@'+S.user;$('profileAvatar').innerHTML=avatarContent(shown,S.profile.avatarColor,S.user)}
 async function loadMyProfile(){if(!sessionToken)return;try{const data=await api('/api/profile');S.profile=data.profile||S.profile;updateSelfIdentity()}catch(e){if(!/Profile/.test(e.message||''))console.warn('Profile could not be loaded',e)}}
 $('authForm').onsubmit=async e=>{e.preventDefault();let n=$('username').value.trim(),p=$('password').value;if(!/^[A-Za-z0-9_]{2,20}$/.test(n)){toast('Use 2–20 letters, numbers, or underscores.');return}if(p.length<8){toast('Password must be at least 8 characters.');return}const btn=$('authSubmit');btn.disabled=true;btn.textContent=S.mode==='in'?'Signing in…':'Creating account…';try{const data=await api(S.mode==='in'?'/api/login':'/api/register',{username:n,password:p},false);if(!data.token)throw new Error('The server response did not include a session token.');saveSession(data.token);const user=data.user||{};const username=user.username||data.username||n;enter(username,user.role||'user',user.id||'');$('connectionText').textContent='Connected';$('password').value='';toast(S.mode==='in'?'Signed in successfully.':'Account created successfully.')}catch(err){toast(err.message||'Sign-in failed.')}finally{btn.disabled=false;btn.textContent=S.mode==='in'?'Sign in →':'Create account →'}};
@@ -178,7 +153,7 @@ function renderMessages(){
   const canPin=S.role==='admin'||roomById(S.room).owner_id===S.userId||Number(roomById(S.room).can_manage)===1;
   const actions=m.optimisticStatus==='sending'?'<span class="message-edited">Sending…</span>':m.optimisticStatus==='failed'?`<span class="message-edited">Not sent</span><button class="message-tool action" data-retry="${esc(m.id)}">Retry</button>`:m.deletedAt?'<span class="message-edited">deleted</span>':`${mine?`<button class="message-tool action" data-edit="${esc(m.id)}">Edit</button><button class="message-tool action" data-delete="${esc(m.id)}">Delete</button>`:''}<button class="message-tool action" data-reply="${esc(m.id)}">Reply</button><button class="message-tool action" data-save="${esc(m.id)}">Save</button><button class="message-tool action" data-report="${esc(m.id)}">Report</button>${canPin?`<button class="message-tool action" data-pin="${esc(m.id)}">Pin</button>`:''}<button class="message-tool action" data-add-reaction="${esc(m.id)}" aria-label="Add reaction">＋ React</button>`;
   const content=m.deletedAt?'This message was deleted.':esc(m.text).replace(/(^|\s)(@[A-Za-z0-9_]{2,20})/g,'$1<strong class="mention">$2</strong>');
-  const replyPreview=m.replyTo?`<button class="reply-preview" data-jump="${esc(m.replyTo)}">↪ ${esc(m.replyUsername||'Reply')} · ${m.replyDeletedAt?'Deleted message':esc(m.replyText||'Original message')}</button>`:'';
+  const replyPreview=m.replyTo?`<button class="reply-preview" data-jump="${esc(m.replyTo)}" data-reply-username="${esc(String(m.replyUsername||'').trim().replace(/^@/,'').toLowerCase())}">↪ ${esc(m.replyUsername||'Reply')} · ${m.replyDeletedAt?'Deleted message':esc(m.replyText||'Original message')}</button>`:'';
   const statusClass=m.optimisticStatus==='failed'?'failed':m.optimisticStatus==='sending'?'pending':'';
   box.insertAdjacentHTML('beforeend',`<article class="message ${mine?'mine':''} ${m.deletedAt?'deleted':''} ${statusClass}" data-msg-id="${esc(m.id)}" data-user-id="${esc(m.userId||'')}" data-avatar-name="${esc(m.username||m.name||'User')}" data-avatar-username="${esc(m.username||m.name||'User')}"><div class="avatar">${avatarContent(m.username||m.name,m.avatarColor,m.username||m.name)}</div><div class="message-main"><div class="message-meta"><button class="message-author profile-link" data-profile="${esc(m.username||m.name)}">${esc(m.name)}</button><span class="message-time">${tm}</span>${m.editedAt&&!m.deletedAt?'<span class="message-edited">edited</span>':''}</div>${replyPreview}<div class="message-text">${content}</div><div class="message-tools">${reactions}${actions}</div></div></article>`);
  });
@@ -445,7 +420,8 @@ function renderDmThread(state, forceBottom=false){
   const messageText=deleted?'Message deleted':String(m.text||'');
   const status=m.failed?'<span>Not sent</span>':m.pending?'<span>Sending…</span>':'';
   const retry=m.failed?`<button class="btn" data-dm-retry="${esc(m.id)}" style="margin-top:5px;padding:3px 7px;font-size:11px">Retry</button>`:'';
-  return `<div class="dm-row" style="justify-content:${mine?'flex-end':'flex-start'}">${mine?'':`<div class="avatar dm-message-avatar">${avatarContent(m.display_name||m.username||'User',m.avatar_color,m.username)}</div>`}<div class="dm-bubble ${mine?'mine':'other'} ${m.pending?'pending':''}"><div class="dm-meta"><strong>${esc(mine?'You':(m.display_name||m.username||'User'))}</strong><span>${dmTime(m.created_at)}</span>${status}</div><div class="dm-text">${esc(messageText)}</div>${retry}</div>${mine?`<div class="avatar dm-message-avatar">${avatarContent(S.profile.displayName||S.user,S.profile.avatarColor,S.user)}</div>`:''}</div>`;
+  const senderUsername=String(mine?S.user:(m.username||m.sender_username||'')).trim().replace(/^@/,'').toLowerCase();
+  return `<div class="dm-row" data-sender-username="${esc(senderUsername)}" style="justify-content:${mine?'flex-end':'flex-start'}">${mine?'':`<div class="avatar dm-message-avatar">${avatarContent(m.display_name||m.username||'User',m.avatar_color,m.username)}</div>`}<div class="dm-bubble ${mine?'mine':'other'} ${m.pending?'pending':''}"><div class="dm-meta"><strong>${esc(mine?'You':(m.display_name||m.username||'User'))}</strong><span>${dmTime(m.created_at)}</span>${status}</div><div class="dm-text">${esc(messageText)}</div>${retry}</div>${mine?`<div class="avatar dm-message-avatar">${avatarContent(S.profile.displayName||S.user,S.profile.avatarColor,S.user)}</div>`:''}</div>`;
  }).join(''):'<div class="notice" style="text-align:center;margin:auto">No messages yet. Say hello.</div>';
  if(nearBottom)box.scrollTop=box.scrollHeight;
  box.querySelectorAll('[data-dm-retry]').forEach(b=>b.onclick=()=>retryDirectMessage(state,b.dataset.dmRetry));
