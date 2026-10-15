@@ -60,7 +60,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <symbol id="spark" viewBox="0 0 24 24"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3zM19 16l1 2.5 2.5 1-2.5 1L19 23l-1-2.5-2.5-1 2.5-1L19 16z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
 </svg>
 <div id="auth" class="auth-screen"><div class="auth-card">
-<div class="brand auth-brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub">A little corner to talk</div></div></div>
+<div class="brand auth-brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub"></div></div></div>
 <h1 id="authTitle">Good to see you.</h1><p class="auth-subtitle" id="authSubtitle">Sign in to pick up the conversation.</p>
 <div class="auth-tabs"><button class="auth-tab active" id="tabIn">Sign in</button><button class="auth-tab" id="tabUp">Create account</button></div>
 <form class="auth-form" id="authForm"><div class="field"><label for="username">Username</label><input id="username" autocomplete="username" maxlength="20" placeholder="Choose a username" required></div><div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="Enter your password" required></div><button class="btn primary" id="authSubmit" style="width:100%;padding:12px">Sign in →</button></form>
@@ -70,7 +70,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 </div></div>
 <div id="app" class="app hidden">
-<aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub">A little corner to talk</div></div><button class="btn icon ghost" id="closeSide" aria-label="Close menu" style="margin-left:auto;display:none"><svg class="ico"><use href="#x"/></svg></button></div>
+<aside class="sidebar" id="sidebar"><div class="brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub"></div></div><button class="btn icon ghost" id="closeSide" aria-label="Close menu" style="margin-left:auto;display:none"><svg class="ico"><use href="#x"/></svg></button></div>
 <section><div class="sidebar-heading"><span class="eyebrow">Your rooms</span><button class="btn icon ghost" id="addRoom" title="Join a room"><svg class="ico"><use href="#plus"/></svg></button></div><div class="room-list" id="roomList"></div></section>
 <div class="sidebar-bottom"><div class="connection"><span class="dot"></span><span id="connectionText">Connecting…</span></div><div class="profile"><div class="avatar" id="profileAvatar">G</div><div class="profile-info"><div class="profile-name" id="profileName">Guest</div><div class="profile-status" id="profileHandle">Account</div></div><button class="btn icon ghost" id="profileSettings" aria-label="Settings"><svg class="ico"><use href="#settings-icon"/></svg></button></div></div></aside>
 <main class="main"><header class="topbar"><div class="room-title"><button class="btn icon ghost mobile-menu" id="openSide" aria-label="Open room list"><svg class="ico"><use href="#menu"/></svg></button><div><h1 id="roomTitle"># general</h1><div class="room-description" id="roomDesc">The public lobby · a good place to start</div><div class="presence-summary" id="presenceSummary">Checking who’s online…</div></div></div>
@@ -131,8 +131,36 @@ function resetAccountCaches(){
 }
 function safeAvatarColor(value){const color=String(value||'').trim().toLowerCase();return /^#[0-9a-f]{6}$/.test(color)?color:'#8b72c7'}
 function avatarForeground(color){const c=safeAvatarColor(color);const r=parseInt(c.slice(1,3),16)/255,g=parseInt(c.slice(3,5),16)/255,b=parseInt(c.slice(5,7),16)/255;const lum=.2126*r+.7152*g+.0722*b;return lum<.54?'#ffffff':'#241b30'}
-function avatarContent(username,color='#8b72c7',accountUsername=''){const account=String(accountUsername||username||'').trim().replace(/^@/,'').toLowerCase();if(account==='spamton')return '<img class="static-avatar-image" src="./spamton.webp" alt="" loading="lazy" decoding="async">';const c=safeAvatarColor(color);return '<span class="avatar-initial" style="background-color:'+c+';color:'+avatarForeground(c)+'">'+esc(init(username))+'</span>'}
-function updateSelfIdentity(){const shown=S.profile.displayName||S.user;$('profileName').textContent=shown;$('profileHandle').textContent='@'+S.user;$('profileAvatar').innerHTML=avatarContent(shown,S.profile.avatarColor,S.user)}
+const STATIC_AVATAR_OVERRIDES = {
+  // Existing custom avatar
+  spamton: { src: './spamton.webp' },
+
+  // Add more people below
+  lylerlalko: { src: './assets/avatars/lylerlalko.webp' },
+  username2: { src: './assets/avatars/username2.png' },
+  username3: { src: './assets/avatars/username3.jpg' },
+};
+
+function avatarContent(username, color = '#8b72c7', accountUsername = '') {
+  const account = String(accountUsername || username || '')
+    .trim()
+    .replace(/^@/, '')
+    .toLowerCase();
+
+  const override = STATIC_AVATAR_OVERRIDES[account];
+
+  if (override && typeof override.src === 'string') {
+    return '<img class="static-avatar-image" src="' +
+      esc(override.src) +
+      '" alt="" loading="lazy" decoding="async">';
+  }
+
+  const c = safeAvatarColor(color);
+
+  return '<span class="avatar-initial" style="background-color:' +
+    c + ';color:' + avatarForeground(c) + '">' +
+    esc(init(username)) + '</span>';
+}
 async function loadMyProfile(){if(!sessionToken)return;try{const data=await api('/api/profile');S.profile=data.profile||S.profile;updateSelfIdentity()}catch(e){if(!/Profile/.test(e.message||''))console.warn('Profile could not be loaded',e)}}
 $('authForm').onsubmit=async e=>{e.preventDefault();let n=$('username').value.trim(),p=$('password').value;if(!/^[A-Za-z0-9_]{2,20}$/.test(n)){toast('Use 2–20 letters, numbers, or underscores.');return}if(p.length<8){toast('Password must be at least 8 characters.');return}const btn=$('authSubmit');btn.disabled=true;btn.textContent=S.mode==='in'?'Signing in…':'Creating account…';try{const data=await api(S.mode==='in'?'/api/login':'/api/register',{username:n,password:p},false);if(!data.token)throw new Error('The server response did not include a session token.');saveSession(data.token);const user=data.user||{};const username=user.username||data.username||n;enter(username,user.role||'user',user.id||'');$('connectionText').textContent='Connected';$('password').value='';toast(S.mode==='in'?'Signed in successfully.':'Account created successfully.')}catch(err){toast(err.message||'Sign-in failed.')}finally{btn.disabled=false;btn.textContent=S.mode==='in'?'Sign in →':'Create account →'}};
 async function restoreSession(){try{const saved=localStorage.getItem(TOKEN_KEY);if(!saved)return;sessionToken=saved;const data=await api('/api/me');const user=data.user||data;const name=user.username;if(!name)throw new Error('Invalid session response');enter(name,user.role||'user',user.id||'');$('connectionText').textContent='Connected'}catch(e){clearSession();$('connectionText').textContent='Not signed in'}}
