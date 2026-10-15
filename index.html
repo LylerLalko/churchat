@@ -111,6 +111,23 @@ $('theme').onclick=()=>setTheme(S.theme==='light'?'dark':'light');
 function authMode(m){S.mode=m;let sign=m==='in';$('tabIn').classList.toggle('active',sign);$('tabUp').classList.toggle('active',!sign);$('authTitle').textContent=sign?'Good to see you.':'Make yourself at home.';$('authSubtitle').textContent=sign?'Sign in to pick up the conversation.':'Create an account to join the conversation.';$('authSubmit').textContent=sign?'Sign in →':'Create account →';$('password').autocomplete=sign?'current-password':'new-password';$('authSwitch').innerHTML=sign?'New around here? <button class="text-button" id="switchAuth">Create an account</button>':'Already have an account? <button class="text-button" id="switchAuth">Sign in</button>'; $('switchAuth').onclick=()=>authMode(sign?'up':'in')}
 $('tabIn').onclick=()=>authMode('in');$('tabUp').onclick=()=>authMode('up');$('switchAuth').onclick=()=>authMode('up');
 function enter(name,role='user',userId=''){S.user=name||'Guest';S.role=role;S.userId=userId||'';updateSelfIdentity();$('auth').classList.add('hidden');$('app').classList.remove('hidden');renderRooms();renderMessages();renderMembers();$('message').focus();loadPublicSiteSettings();if(sessionToken){loadMyProfile();loadRooms().then(()=>handlePendingInvite()).catch(e=>toast(e.message||'Could not load rooms.'));startMessageSync()}else stopMessageSync()}
+function updateSelfIdentity() {
+  const shown = S.profile?.displayName || S.user;
+  const nameEl = $('profileName');
+  const handleEl = $('profileHandle');
+  const avatarEl = $('profileAvatar');
+
+  if (nameEl) nameEl.textContent = shown;
+  if (handleEl) handleEl.textContent = '@' + S.user;
+
+  if (avatarEl && typeof avatarContent === 'function') {
+    avatarEl.innerHTML = avatarContent(
+      shown,
+      S.profile?.avatarColor,
+      S.user
+    );
+  }
+}
 function connectionStatus(label,state='online'){const el=$('connectionText');if(!el)return;el.textContent=label;const dot=el.parentElement?.querySelector('.dot');if(dot)dot.className='dot '+(state==='offline'?'offline':state==='connecting'?'connecting':'')}
 async function api(path,body,auth=true){const headers={'Content-Type':'application/json'};if(auth&&sessionToken)headers.Authorization='Bearer '+sessionToken;let res;try{res=await fetch(API+path,{method:body?'POST':'GET',headers,body:body?JSON.stringify(body):undefined})}catch(e){connectionStatus(navigator.onLine?'Reconnecting…':'Offline','offline');throw new Error('Could not reach ChurChat’s server. Check your connection and try again.')}let data;try{data=await res.json()}catch(e){data={}}if(!res.ok||data.ok===false){if(data.maintenance){connectionStatus('Maintenance mode','connecting')}else if(res.status>=500)connectionStatus('Server unavailable','offline');throw new Error(data.error||data.message||('Request failed ('+res.status+').'))}if(sessionToken&&navigator.onLine)connectionStatus('Connected','online');return data}
 window.addEventListener('offline',()=>connectionStatus('Offline','offline'));window.addEventListener('online',()=>{connectionStatus('Reconnecting…','connecting');if(sessionToken){loadRooms().catch(()=>{});loadMessages(true,false).finally(scheduleMessagePolling).catch(()=>{});scheduleMessagePolling()}});
