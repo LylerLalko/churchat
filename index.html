@@ -39,6 +39,108 @@ html[data-theme="dark"][data-palette="slate"]{--bg:#171c24;--surface:#202732;--s
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline-color:color-mix(in srgb,var(--accent) 36%,transparent)}
 .dm-row{align-items:flex-end}.dm-message-avatar{width:28px;height:28px;flex:0 0 28px;border-radius:9px;font-size:10px;margin:0 7px 3px}
 </style>
+
+<style id="spamton-message-box-css">
+/* A restrained RPG dialogue frame inspired by classic Deltarune text boxes.
+   The frame is CSS-only and scales naturally with each message. */
+.message[data-avatar-username="spamton" i] .message-text {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: fit-content;
+  max-width: 100%;
+  min-width: min(248px, 100%);
+  padding: 12px 15px 13px;
+  color: #fff;
+  background: #000;
+  border: 3px solid #fff;
+  border-radius: 0;
+  box-shadow: 0 0 0 2px #000;
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-shadow: none;
+  overflow-wrap: anywhere;
+}
+
+/* Keep the message actions comfortably separate from the hard-edged frame. */
+.message[data-avatar-username="spamton" i] .message-tools {
+  margin-top: 10px;
+}
+.message[data-avatar-username="spamton" i].mine .message-main {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  color: var(--text);
+}
+.message[data-avatar-username="spamton" i] .message-author {
+  color: #873c91;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+.message[data-avatar-username="spamton" i] .message-time {
+  color: var(--muted);
+}
+.message[data-avatar-username="spamton" i] .message-text .mention {
+  color: #000;
+  background: #fff;
+  border-radius: 0;
+  padding: 0 3px;
+  font-weight: 800;
+}
+
+/* Replies quoting Spamton use a compact version of the same monochrome frame. */
+.reply-preview[data-reply-username="spamton" i] {
+  color: #fff;
+  background: #000;
+  border: 1px solid #fff;
+  outline: 1px solid #000;
+  border-left: 3px solid #fff;
+  border-radius: 0;
+  padding: 6px 9px;
+}
+
+/* Direct messages from Spamton share the same squared, monochrome frame. */
+.dm-row[data-sender-username="spamton" i] .dm-bubble {
+  position: relative;
+  box-sizing: border-box;
+  padding: 12px 15px 13px;
+  color: #fff;
+  background: #000;
+  border: 3px solid #fff;
+  border-radius: 0;
+  box-shadow: 0 0 0 2px #000;
+}
+.dm-row[data-sender-username="spamton" i] .dm-meta {
+  color: #bcbcbc;
+}
+.dm-row[data-sender-username="spamton" i] .dm-meta strong {
+  color: #fff;
+  font-weight: 800;
+}
+.dm-row[data-sender-username="spamton" i] .dm-text {
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+@media (max-width: 520px) {
+  .message[data-avatar-username="spamton" i] .message-text {
+    min-width: 0;
+    padding: 10px 12px 11px;
+    font-size: 14px;
+  }
+  .dm-row[data-sender-username="spamton" i] .dm-bubble {
+    padding: 10px 12px 11px;
+  }
+  .dm-row[data-sender-username="spamton" i] .dm-text {
+    font-size: 14px;
+  }
+}
+</style>
+
 </head>
 <body>
 <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
