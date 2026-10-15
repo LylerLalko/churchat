@@ -227,9 +227,8 @@ const SPAMTON_VOICE_URL='./spamton.mp3';
 // MUSIC PLAYLIST: upload audio files to your GitHub repository, then add their paths here.
 // Example: {title:'Song title', file:'./music/song-title.mp3'}
 const MUSIC_TRACKS = [
-  {title:'Spider Dance', file:'./music/spiderdance.mp3'},
-  {title:'Death By Glamour', file:'./music/deathbyglamour.mp3'},
-   {title:'Rude Buster', file:'./music/rudebuster.mp3'},
+  // {title:'Song One', file:'./music/song-one.mp3'},
+  // {title:'Song Two', file:'./music/song-two.mp3'},
 ];
 let musicAudio = null, currentMusicIndex = -1, currentMusicTitle = '';
 const spamtonAnimationStates=new Map();
@@ -251,20 +250,36 @@ function setTabNewMessage(){S.tabNewMessage=true;updateTabFavicon()}
 function acknowledgeTabMessages(){S.tabNewMessage=false;updateTabFavicon()}
 function setDmUnreadTotal(rows){S.dmUnreadTotal=(rows||[]).reduce((total,c)=>total+Math.max(0,Number(c.unreadCount)||0),0);updateTabFavicon()}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').classList.remove('show'),2600)}
-function playRandomMusic(){
+function playMusicTrack(index){
  if(!MUSIC_TRACKS.length){toast('No songs added yet. Add tracks to MUSIC_TRACKS in index.html.');return}
- let next=Math.floor(Math.random()*MUSIC_TRACKS.length);
- if(MUSIC_TRACKS.length>1&&next===currentMusicIndex)next=(next+1)%MUSIC_TRACKS.length;
+ const next=Number(index);if(!Number.isInteger(next)||next<0||next>=MUSIC_TRACKS.length)return;
  const song=MUSIC_TRACKS[next];currentMusicIndex=next;currentMusicTitle=song.title||'Untitled song';
  if(musicAudio){musicAudio.pause();musicAudio.removeAttribute('src');musicAudio.load()}
  musicAudio=new Audio(song.file);musicAudio.preload='metadata';
- musicAudio.addEventListener('error',()=>toast('Could not load '+currentMusicTitle+'. Check the file path.'),{once:true});
- musicAudio.play().then(()=>toast('Now playing: '+currentMusicTitle)).catch(()=>toast('Playback failed. Check the audio file path and format.'));
+ musicAudio.addEventListener('error',()=>{toast('Could not load '+currentMusicTitle+'. Check the file path.');updateMusicPlayerStatus()},{once:true});
+ musicAudio.addEventListener('ended',updateMusicPlayerStatus);
+ musicAudio.play().then(()=>{toast('Now playing: '+currentMusicTitle);updateMusicPlayerStatus()}).catch(()=>{toast('Playback failed. Check the audio file path and format.');updateMusicPlayerStatus()});
  updateMusicPlayerStatus();
 }
+function toggleMusicPlayback(){
+ if(!MUSIC_TRACKS.length){toast('No songs added yet. Add tracks to MUSIC_TRACKS in index.html.');return}
+ const picker=$('musicTrackSelect');const selected=picker?Number(picker.value):currentMusicIndex;
+ if(musicAudio&&currentMusicIndex===selected&&musicAudio.src){
+  if(musicAudio.paused){musicAudio.play().then(updateMusicPlayerStatus).catch(()=>toast('Playback failed. Check the audio file path and format.'))}
+  else{musicAudio.pause();updateMusicPlayerStatus()}
+ }else playMusicTrack(selected);
+}
 function stopMusic(){if(musicAudio){musicAudio.pause();musicAudio.currentTime=0}toast('Music stopped.');updateMusicPlayerStatus()}
-function updateMusicPlayerStatus(){const el=$('musicPlayerStatus');if(el)el.textContent=musicAudio&&!musicAudio.paused?'Playing: '+currentMusicTitle:currentMusicTitle?'Paused/stopped: '+currentMusicTitle:'Nothing playing'}
-function showMusicPlayer(){modal('Music player',`<p class="muted">Play a random song from ChurChat’s hard-coded playlist. Music keeps playing if you close this window.</p><div class="notice" id="musicPlayerStatus">${esc(musicAudio&&!musicAudio.paused?'Playing: '+currentMusicTitle:currentMusicTitle?'Paused/stopped: '+currentMusicTitle:'Nothing playing')}</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="musicPlayRandom">Play random song</button><button class="btn" id="musicStop">Stop music</button></div><p class="muted" style="font-size:11px">To add songs, upload audio files to a <code>music</code> folder in the GitHub repository and add each title and path to <code>MUSIC_TRACKS</code> in index.html.</p>`,()=>{$('musicPlayRandom').onclick=playRandomMusic;$('musicStop').onclick=stopMusic})}
+function updateMusicPlayerStatus(){
+ const el=$('musicPlayerStatus');if(el)el.textContent=musicAudio&&!musicAudio.paused?'Playing: '+currentMusicTitle:currentMusicTitle?'Paused: '+currentMusicTitle:'Nothing playing';
+ const btn=$('musicPlayPause');if(btn)btn.textContent=musicAudio&&!musicAudio.paused?'Pause':'Play';
+ const picker=$('musicTrackSelect');if(picker&&currentMusicIndex>=0&&currentMusicIndex<MUSIC_TRACKS.length)picker.value=String(currentMusicIndex);
+}
+function showMusicPlayer(){
+ const options=MUSIC_TRACKS.map((song,index)=>`<option value="${index}" ${index===currentMusicIndex?'selected':''}>${esc(song.title||'Untitled song')}</option>`).join('');
+ const disabled=MUSIC_TRACKS.length?'':' disabled';
+ modal('Music player',`<p class="muted">Choose a song, then press Play or Pause. Music keeps playing if you close this window.</p><label for="musicTrackSelect" style="display:block;margin:10px 0 6px">Choose a song</label><select id="musicTrackSelect" class="input" style="width:100%;margin-bottom:12px"${disabled}>${MUSIC_TRACKS.length?options:'<option value="">No songs added yet</option>'}</select><div class="notice" id="musicPlayerStatus">${esc(musicAudio&&!musicAudio.paused?'Playing: '+currentMusicTitle:currentMusicTitle?'Paused: '+currentMusicTitle:'Nothing playing')}</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" id="musicPlayPause"${disabled}>${musicAudio&&!musicAudio.paused?'Pause':'Play'}</button><button class="btn" id="musicStop"${disabled}>Stop</button></div><p class="muted" style="font-size:11px;margin-top:12px">To add songs, upload audio files to a <code>music</code> folder in the GitHub repository and add each title and path to <code>MUSIC_TRACKS</code> in index.html.</p>`,()=>{$('musicPlayPause').onclick=toggleMusicPlayback;$('musicStop').onclick=stopMusic;$('musicTrackSelect').onchange=()=>{const i=Number($('musicTrackSelect').value);if(Number.isInteger(i)&&i>=0&&i<MUSIC_TRACKS.length){currentMusicIndex=i;currentMusicTitle=MUSIC_TRACKS[i].title||'Untitled song';updateMusicPlayerStatus()}}})
+}
 
 function setTheme(t){S.theme=t;document.documentElement.dataset.theme=t; $('theme').innerHTML=ico(t==='light'?'moon':'sun');try{localStorage.setItem('churchat-theme',t)}catch(e){}}
 try{const t=localStorage.getItem('churchat-theme');if(t==='dark'||t==='light')S.theme=t}catch(e){}setTheme(S.theme);
