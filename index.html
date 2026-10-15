@@ -208,7 +208,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <div class="brand auth-brand"><div class="brand-mark"><svg class="ico"><use href="#chat"/></svg></div><div><div class="brand-name">ChurChat</div><div class="brand-sub"></div></div></div>
 <h1 id="authTitle">Good to see you.</h1><p class="auth-subtitle" id="authSubtitle">Sign in to pick up the conversation.</p>
 <div class="auth-tabs"><button class="auth-tab active" id="tabIn">Sign in</button><button class="auth-tab" id="tabUp">Create account</button></div>
-<form class="auth-form" id="authForm"><div class="field"><label for="username">Username</label><input id="username" autocomplete="username" maxlength="20" placeholder="Choose a username" required></div><div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="Enter your password" required></div><button class="btn primary" id="authSubmit" style="width:100%;padding:12px">Sign in →</button></form>
+<form class="auth-form" id="authForm"><div class="field"><label for="username">Username</label><input id="username" autocomplete="username" maxlength="20" placeholder="Choose a username" required></div><div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" placeholder="Enter your password" required></div><button type="submit" class="btn primary" id="authSubmit" style="width:100%;padding:12px">Sign in →</button><div id="authFeedback" role="status" aria-live="polite" style="display:none;font-size:12px;line-height:1.45;margin-top:9px;overflow-wrap:anywhere"></div></form>
 <div class="auth-switch" id="authSwitch">New around here? <button class="text-button" id="switchAuth">Create an account</button></div>
 <button class="btn bug-report-cta" id="authReportBug" type="button">🐛 Report a bug or problem</button>
 <div class="notice" style="margin-top:18px">Accounts are stored by ChurChat’s backend. Use a username and password; no email is required.</div>
@@ -311,9 +311,11 @@ const STATIC_AVATAR_OVERRIDES = {
 
   // Add more people below
   lylerlalko: { src: './assets/avatars/lylerlalko.webp' },
-  ded_zudley_: { src: './assets/avatars/ded_zudley.jpg' },
   scythe: { src: './assets/avatars/scythe.png' },
-   doomslayer7912: { src: './assets/avatars/doomslayer7912.jpg',
+  doomslayer7912: { src: './assets/avatars/doomslayer7912.jpg' },
+   ded_zudley_: { src: './assets/avatars/ded_zudley_.jpg' },
+   mranttenna: { src: './assets/avatars/mranttenna.jpg',
+   
 };
 
 function avatarContent(username, color = '#8b72c7', accountUsername = '') {
@@ -337,7 +339,25 @@ function avatarContent(username, color = '#8b72c7', accountUsername = '') {
     esc(init(username)) + '</span>';
 }
 async function loadMyProfile(){if(!sessionToken)return;try{const data=await api('/api/profile');S.profile=data.profile||S.profile;updateSelfIdentity()}catch(e){if(!/Profile/.test(e.message||''))console.warn('Profile could not be loaded',e)}}
-$('authForm').onsubmit=async e=>{e.preventDefault();let n=$('username').value.trim(),p=$('password').value;if(!/^[A-Za-z0-9_]{2,20}$/.test(n)){toast('Use 2–20 letters, numbers, or underscores.');return}if(p.length<8){toast('Password must be at least 8 characters.');return}const btn=$('authSubmit');btn.disabled=true;btn.textContent=S.mode==='in'?'Signing in…':'Creating account…';try{const data=await api(S.mode==='in'?'/api/login':'/api/register',{username:n,password:p},false);if(!data.token)throw new Error('The server response did not include a session token.');saveSession(data.token);const user=data.user||{};const username=user.username||data.username||n;enter(username,user.role||'user',user.id||'');$('connectionText').textContent='Connected';$('password').value='';toast(S.mode==='in'?'Signed in successfully.':'Account created successfully.')}catch(err){toast(err.message||'Sign-in failed.')}finally{btn.disabled=false;btn.textContent=S.mode==='in'?'Sign in →':'Create account →'}};
+async function handleAuthAction(e){
+ if(e)e.preventDefault();
+ const feedback=$('authFeedback');
+ const showAuthFeedback=(message,isError=false)=>{if(!feedback)return;feedback.textContent=message||'';feedback.style.display=message?'block':'none';feedback.style.color=isError?'var(--danger, #b42318)':'var(--muted, #686276)'};
+ const n=$('username').value.trim(),p=$('password').value;
+ if(!n||!p){showAuthFeedback('Enter your username and password.',true);return}
+ if(!/^[A-Za-z0-9_]{2,20}$/.test(n)){showAuthFeedback('Use 2–20 letters, numbers, or underscores.',true);return}
+ if(p.length<8){showAuthFeedback('Password must be at least 8 characters.',true);return}
+ const btn=$('authSubmit');btn.disabled=true;btn.textContent=S.mode==='in'?'Signing in…':'Creating account…';showAuthFeedback(S.mode==='in'?'Contacting the sign-in server…':'Creating your account…');
+ try{
+  const data=await api(S.mode==='in'?'/api/login':'/api/register',{username:n,password:p},false);
+  if(!data.token)throw new Error('The server response did not include a session token.');
+  saveSession(data.token);const user=data.user||{};const username=user.username||data.username||n;
+  enter(username,user.role||'user',user.id||'');$('connectionText').textContent='Connected';$('password').value='';showAuthFeedback('');toast(S.mode==='in'?'Signed in successfully.':'Account created successfully.');
+ }catch(err){const message=err&&err.message?err.message:'Sign-in failed. Please try again.';showAuthFeedback(message,true);toast(message)}
+ finally{btn.disabled=false;btn.textContent=S.mode==='in'?'Sign in →':'Create account →'}
+}
+$('authForm').onsubmit=e=>{e.preventDefault();handleAuthAction(e)};
+$('authSubmit').onclick=e=>{e.preventDefault();handleAuthAction(e)};
 async function restoreSession(){try{const saved=localStorage.getItem(TOKEN_KEY);if(!saved)return;sessionToken=saved;const data=await api('/api/me');const user=data.user||data;const name=user.username;if(!name)throw new Error('Invalid session response');enter(name,user.role||'user',user.id||'');$('connectionText').textContent='Connected'}catch(e){clearSession();$('connectionText').textContent='Not signed in'}}
 function roomById(id){return S.rooms.find(r=>r.id===id)||{id,name:id,is_public:id==='general'?1:0}}
 function roomName(id){return roomById(id).name||id}
