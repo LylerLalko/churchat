@@ -139,6 +139,41 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     font-size: 14px;
   }
 }
+
+/* Small replay control belongs only to Spamton messages. */
+.spamton-replay-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border: 1px solid #fff;
+  outline: 1px solid #000;
+  border-radius: 0;
+  background: #000;
+  color: #fff;
+  font-family: "ChurChatSpamtonFont", system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.spamton-replay-button:hover,
+.spamton-replay-button:focus-visible {
+  background: #fff;
+  color: #000;
+}
+.message[data-avatar-username="spamton" i] .spamton-replay-button {
+  margin-top: 0;
+}
+.dm-row[data-sender-username="spamton" i] .spamton-replay-button {
+  border-color: #fff;
+  background: #000;
+  color: #fff;
+}
+.dm-row[data-sender-username="spamton" i] .spamton-replay-button:hover,
+.dm-row[data-sender-username="spamton" i] .spamton-replay-button:focus-visible {
+  background: #fff;
+  color: #000;
+}
 </style>
 
 </head>
@@ -188,6 +223,11 @@ let unreadRefreshTimer=null, activeSearchTimer=null, siteSettingsLastFetch=0, la
 let lastUserActivityAt=Date.now(), syncCursors=Object.create(null), syncCycles=Object.create(null), syncIdentityEpoch=0;
 let presenceTimer=null, heartbeatTimer=null, typingRefreshTimer=null, typingStopTimer=null, typingActive=false, presenceLoadBusy=false;
 let dmPollTimer=null, dmCurrent=null;
+const SPAMTON_VOICE_URL='./spamton.mp3';
+const spamtonAnimationStates=new Map();
+const spamtonAutoStartedThisPage=new Set();
+const pendingSpamtonAnimations=new Map();
+let spamtonVoiceAudio=null, spamtonAudioReady=false, spamtonAudioPriming=null;
 const ico=n=>`<svg class="ico" aria-hidden="true"><use href="#${n}"/></svg>`, init=n=>(n||'?').trim().slice(0,1).toUpperCase(), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function tabHasUnread(){return !!S.tabNewMessage||Number(S.dmUnreadTotal)>0||Object.values(S.unreadCounts||{}).some(v=>Number(v)>0)}
 function updateTabFavicon(){
@@ -256,7 +296,7 @@ const STATIC_AVATAR_OVERRIDES = {
 
   // Add more people below
   lylerlalko: { src: './assets/avatars/lylerlalko.webp' },
-  ded_zudley_: { src: './assets/avatars/ded_zudley_.jpg' },
+  username2: { src: './assets/avatars/username2.png' },
   username3: { src: './assets/avatars/username3.jpg' },
 };
 
@@ -289,6 +329,193 @@ async function loadRooms(){if(!sessionToken)return;const data=await api('/api/ro
 function renderRooms(){$('roomList').innerHTML=S.rooms.map(r=>{const unread=Number(S.unreadCounts[r.id]??r.unread_count??0);return `<button class="room-btn ${r.id===S.room?'active':''}" data-room="${esc(r.id)}">${ico(r.id==='general'||Number(r.is_public)===1?'hash':'lock')}<span class="room-name">${esc(r.name)}</span>${unread>0&&r.id!==S.room?`<span class="room-count unread">${unread>99?'99+':unread}</span>`:''}</button>`}).join('');$('roomList').querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>changeRoom(b.dataset.room))}
 function changeRoom(id){if(typingActive)sendTyping(false);try{localStorage.setItem('churchat-draft:'+S.room,$('message').value||'')}catch(e){}clearReply();S.room=id;const r=roomById(id);$('roomTitle').textContent=(id==='general'||Number(r.is_public)===1?'# ':'🔒 ')+r.name;$('roomDesc').textContent=r.topic|| (id==='general'?'The public lobby · a good place to start':(Number(r.is_public)===1?'Public room · open to everyone':'Private room · invite-only'));$('message').placeholder='Message '+(id==='general'||Number(r.is_public)===1?'#':'🔒')+r.name+'…';try{$('message').value=localStorage.getItem('churchat-draft:'+id)||'';$('message').dispatchEvent(new Event('input'))}catch(e){}renderRooms();renderMessages();if(sessionToken)loadMessages(true);closeSide()}
 const REACTION_CHOICES=['👍','❤️','😂','😮','😢','🎉','🔥','👀','👎','🙏'];
+
+function spamtonAccount(value){return String(value||'').trim().replace(/^@/,'').toLowerCase()==='spamton'}
+function spamtonTargetKey(kind,roomId,conversationId,id){return kind==='chat'?'chat|'+String(roomId)+'|'+String(id):'dm|'+String(conversationId)+'|'+String(id)}
+function hasActiveSpamtonAnimation(){return spamtonAnimationStates.size>0}
+function getSpamtonVoiceAudio(){
+ if(!spamtonVoiceAudio){spamtonVoiceAudio=new Audio(SPAMTON_VOICE_URL);spamtonVoiceAudio.preload='auto';spamtonVoiceAudio.volume=.9;spamtonVoiceAudio.loop=false}
+ return spamtonVoiceAudio
+}
+function primeSpamtonAudio(){
+ if(spamtonAudioReady)return Promise.resolve(true);
+ if(spamtonAudioPriming)return spamtonAudioPriming;
+ const audio=getSpamtonVoiceAudio();
+ try{audio.pause();audio.currentTime=0;audio.muted=true;const result=audio.play();
+  spamtonAudioPriming=Promise.resolve(result).then(()=>{audio.pause();try{audio.currentTime=0}catch(e){}audio.muted=false;spamtonAudioReady=true;return true},()=>false).finally(()=>{spamtonAudioPriming=null});
+ }catch(e){spamtonAudioPriming=Promise.resolve(false).finally(()=>{spamtonAudioPriming=null})}
+ return spamtonAudioPriming
+}
+function spamtonAudioEnded(state){
+ if(!state||state.cancelled)return;
+ state.audioFinished=true;
+ finalizeSpamtonAnimationIfReady(state);
+}
+async function playSpamtonVoice(state){
+ if(spamtonAudioPriming)await spamtonAudioPriming;
+ const audio=getSpamtonVoiceAudio();
+ try{
+  audio.pause();audio.currentTime=0;audio.muted=false;audio.volume=.9;
+  state.audioFinished=false;
+  audio.onended=()=>spamtonAudioEnded(state);
+  await audio.play();spamtonAudioReady=true;return true;
+ }catch(e){audio.onended=null;return false}
+}
+function findSpamtonTextElement(state){
+ if(state.kind==='chat'){
+  if(String(S.room)!==String(state.roomId))return null;
+  const row=Array.from(document.querySelectorAll('.message[data-msg-id]')).find(el=>String(el.dataset.msgId)===String(state.id));
+  return row?.querySelector('.message-text')||null;
+ }
+ if(!dmCurrent||String(dmCurrent.id)!==String(state.conversationId))return null;
+ const row=Array.from(document.querySelectorAll('.dm-row[data-dm-msg-id]')).find(el=>String(el.dataset.dmMsgId)===String(state.id));
+ return row?.querySelector('.dm-text')||null;
+}
+function formatSpamtonFinalText(state){
+ const safe=esc(state.text);
+ return state.kind==='chat'?safe.replace(/(^|\s)(@[A-Za-z0-9_]{2,20})/g,'$1<strong class="mention">$2</strong>'):safe;
+}
+function paintSpamtonText(state,final=false){
+ const element=findSpamtonTextElement(state);
+ if(!element)return;
+ state.element=element;
+ if(final)element.innerHTML=formatSpamtonFinalText(state);
+ else element.textContent=state.characters.slice(0,state.index).join('');
+}
+function finishSpamtonAnimation(state){
+ if(!state||state.cancelled||state.textFinished)return;
+ if(state.timer)clearTimeout(state.timer);
+ state.timer=null;state.textFinished=true;state.status='finishing';
+ paintSpamtonText(state,true);
+ finalizeSpamtonAnimationIfReady(state);
+}
+function finalizeSpamtonAnimationIfReady(state){
+ if(!state||state.cancelled||!state.textFinished||!state.audioFinished)return;
+ if(spamtonAnimationStates.get(state.key)===state)spamtonAnimationStates.delete(state.key);
+ state.status='finished';
+ // If another Spamton message became the literal latest message while this one
+ // was playing, only start it now—and only if it is still the latest.
+ if(state.kind==='chat'&&String(S.room)===String(state.roomId))maybeAnimateLatestSpamtonRoomMessage(S.messages[state.roomId]||[]);
+ if(state.kind==='dm'&&dmCurrent&&String(dmCurrent.id)===String(state.conversationId))maybeAnimateLatestSpamtonDmMessage(orderedSpamtonDmMessages(dmCurrent.messages),dmCurrent);
+ retryPendingSpamtonAnimations();
+}
+function stepSpamtonAnimation(state){
+ if(spamtonAnimationStates.get(state.key)!==state||state.cancelled||state.textFinished)return;
+ if(state.index>=state.characters.length){finishSpamtonAnimation(state);return}
+ const character=state.characters[state.index++];
+ paintSpamtonText(state,false);
+ let delay=27;
+ if(/[.!?…]/.test(character))delay=145;
+ else if(/[,;:]/.test(character))delay=82;
+ else if(character==='\n')delay=95;
+ state.timer=setTimeout(()=>stepSpamtonAnimation(state),delay);
+}
+function cancelSpamtonAnimation(state){
+ if(!state)return;
+ state.cancelled=true;
+ if(state.timer)clearTimeout(state.timer);
+ state.timer=null;
+ if(spamtonAnimationStates.get(state.key)===state)spamtonAnimationStates.delete(state.key);
+}
+async function startSpamtonAnimation(target,replay=false,automatic=!replay){
+ const key=target.key;
+ if(!replay){
+  if(spamtonAutoStartedThisPage.has(key)||spamtonAnimationStates.has(key)||pendingSpamtonAnimations.has(key))return;
+  // Do not start a second voice sample over one that is already playing.
+  if(hasActiveSpamtonAnimation())return;
+ }else{
+  pendingSpamtonAnimations.delete(key);
+  // An explicit replay is allowed to replace the current animation/audio.
+  for(const previous of Array.from(spamtonAnimationStates.values()))cancelSpamtonAnimation(previous);
+ }
+ const state={...target,key,index:0,characters:Array.from(String(target.text||'')),timer:null,element:null,status:'starting',textFinished:false,audioFinished:false,cancelled:false};
+ spamtonAnimationStates.set(key,state);
+ const soundPlayed=await playSpamtonVoice(state);
+ if(spamtonAnimationStates.get(key)!==state||state.cancelled)return;
+ if(!soundPlayed&&!replay){
+  state.cancelled=true;spamtonAnimationStates.delete(key);
+  pendingSpamtonAnimations.set(key,{target,automatic:true});
+  return;
+ }
+ if(!soundPlayed){state.audioFinished=true;toast('The text will replay, but the Spamton MP3 could not play. Check the audio file path and browser playback permission.')}
+ spamtonAutoStartedThisPage.add(key);
+ pendingSpamtonAnimations.delete(key);
+ state.status='typing';
+ paintSpamtonText(state,false);
+ stepSpamtonAnimation(state);
+}
+function targetIsStillLatestSpamtonMessage(target){
+ if(target.kind==='chat'){
+  if(String(S.room)!==String(target.roomId))return false;
+  const list=S.messages[target.roomId]||[];const latest=list.length?list[list.length-1]:null;
+  return !!latest&&String(latest.id)===String(target.id)&&spamtonAccount(latest.username||latest.name)&&!latest.deletedAt&&!latest.clientPending&&latest.optimisticStatus!=='sending'&&latest.optimisticStatus!=='failed';
+ }
+ if(!dmCurrent||String(dmCurrent.id)!==String(target.conversationId))return false;
+ const ordered=orderedSpamtonDmMessages(dmCurrent.messages);const latest=ordered.length?ordered[ordered.length-1]:null;
+ return !!latest&&String(latest.id)===String(target.id)&&spamtonAccount(latest.username||latest.sender_username||'')&&!latest.deleted_at&&!latest.pending&&!latest.failed&&String(latest.sender_id||'')!==String(S.userId||'');
+}
+function retryPendingSpamtonAnimations(){
+ if(hasActiveSpamtonAnimation())return;
+ for(const [key,entry] of Array.from(pendingSpamtonAnimations.entries())){
+  const target=entry&&entry.target?entry.target:entry;
+  const automatic=entry&&typeof entry.automatic==='boolean'?entry.automatic:true;
+  if(automatic&&!targetIsStillLatestSpamtonMessage(target)){pendingSpamtonAnimations.delete(key);continue}
+  pendingSpamtonAnimations.delete(key);
+  if(spamtonAutoStartedThisPage.has(key))continue;
+  startSpamtonAnimation(target,false,automatic);
+  break;
+ }
+}
+function handleSpamtonAudioGesture(){primeSpamtonAudio().then(ready=>{if(ready)retryPendingSpamtonAnimations()})}
+document.addEventListener('pointerdown',handleSpamtonAudioGesture,{capture:true,passive:true});
+document.addEventListener('keydown',handleSpamtonAudioGesture,true);
+function makeSpamtonTarget(kind,id,text,roomId='',conversationId=''){
+ return {kind,id:String(id),text:String(text||''),roomId:String(roomId||''),conversationId:String(conversationId||''),key:spamtonTargetKey(kind,roomId,conversationId,id)};
+}
+function syncSpamtonAnimationTargets(kind,contextId){
+ for(const state of spamtonAnimationStates.values()){
+  if(state.kind!==kind)continue;
+  if(kind==='chat'&&String(state.roomId)!==String(contextId))continue;
+  if(kind==='dm'&&String(state.conversationId)!==String(contextId))continue;
+  paintSpamtonText(state,!!state.textFinished);
+ }
+}
+function latestSpamtonRoomMessage(list){
+ // Use the literal final visible message, not the newest Spamton message.
+ return Array.isArray(list)&&list.length?list[list.length-1]:null;
+}
+function maybeAnimateLatestSpamtonRoomMessage(list){
+ const message=latestSpamtonRoomMessage(list);
+ if(!message||message.deletedAt||message.clientPending||message.optimisticStatus==='sending'||message.optimisticStatus==='failed'||message.id==null)return;
+ if(!spamtonAccount(message.username||message.name))return;
+ if(String(message.username||'').trim().replace(/^@/,'').toLowerCase()===String(S.user||'').trim().toLowerCase())return;
+ const target=makeSpamtonTarget('chat',message.id,message.text,S.room,'');
+ if(spamtonAutoStartedThisPage.has(target.key)||spamtonAnimationStates.has(target.key)||pendingSpamtonAnimations.has(target.key)||hasActiveSpamtonAnimation())return;
+ startSpamtonAnimation(target,false,true);
+}
+function replaySpamtonRoomMessage(id){
+ const message=(S.messages[S.room]||[]).find(m=>String(m.id)===String(id));if(!message||!spamtonAccount(message.username||message.name)||message.deletedAt)return;
+ startSpamtonAnimation(makeSpamtonTarget('chat',message.id,message.text,S.room,''),true,false);
+}
+function orderedSpamtonDmMessages(messages){
+ return (messages||[]).slice().sort((a,b)=>{const ar=Number(a.message_rowid)||Number.MAX_SAFE_INTEGER,br=Number(b.message_rowid)||Number.MAX_SAFE_INTEGER;if(ar!==br)return ar-br;return(Number(a.created_at)||0)-(Number(b.created_at)||0)});
+}
+function maybeAnimateLatestSpamtonDmMessage(messages,state){
+ const ordered=orderedSpamtonDmMessages(messages),latest=ordered.length?ordered[ordered.length-1]:null;
+ if(!latest||latest.deleted_at||latest.pending||latest.failed||latest.id==null)return;
+ const sender=String(latest.username||latest.sender_username||'').trim().replace(/^@/,'').toLowerCase();
+ if(sender!=='spamton'||String(latest.sender_id||'')===String(S.userId||''))return;
+ const target=makeSpamtonTarget('dm',latest.id,latest.text,'',state.id);
+ if(spamtonAutoStartedThisPage.has(target.key)||spamtonAnimationStates.has(target.key)||pendingSpamtonAnimations.has(target.key)||hasActiveSpamtonAnimation())return;
+ startSpamtonAnimation(target,false,true);
+}
+function replaySpamtonDmMessage(conversationId,id){
+ const state=dmCurrent;if(!state||String(state.id)!==String(conversationId))return;
+ const message=state.messages.find(m=>String(m.id)===String(id));if(!message||message.deleted_at||message.pending||message.failed)return;
+ const sender=String(message.username||message.sender_username||'').trim().replace(/^@/,'').toLowerCase();
+ if(sender!=='spamton'&&String(message.sender_id||'')!==String(S.userId||''))return;
+ startSpamtonAnimation(makeSpamtonTarget('dm',message.id,message.text,'',state.id),true,false);
+}
 function renderMessages(){
  let box=$('messages'),list=S.messages[S.room]||[],name=roomName(S.room);
  box.innerHTML=`<div class="welcome"><div class="welcome-icon">${ico('spark')}</div><h2>Welcome to ${S.room==='general'?'#general':'#'+esc(name)}</h2><p>${S.room==='general'?'A fresh start for good conversations.':'A place for this room’s conversation.'}</p></div><div class="date-divider"><span>Messages</span></div>`;
@@ -300,9 +527,11 @@ function renderMessages(){
   const canPin=S.role==='admin'||roomById(S.room).owner_id===S.userId||Number(roomById(S.room).can_manage)===1;
   const actions=m.optimisticStatus==='sending'?'<span class="message-edited">Sending…</span>':m.optimisticStatus==='failed'?`<span class="message-edited">Not sent</span><button class="message-tool action" data-retry="${esc(m.id)}">Retry</button>`:m.deletedAt?'<span class="message-edited">deleted</span>':`${mine?`<button class="message-tool action" data-edit="${esc(m.id)}">Edit</button><button class="message-tool action" data-delete="${esc(m.id)}">Delete</button>`:''}<button class="message-tool action" data-reply="${esc(m.id)}">Reply</button><button class="message-tool action" data-save="${esc(m.id)}">Save</button><button class="message-tool action" data-report="${esc(m.id)}">Report</button>${canPin?`<button class="message-tool action" data-pin="${esc(m.id)}">Pin</button>`:''}<button class="message-tool action" data-add-reaction="${esc(m.id)}" aria-label="Add reaction">＋ React</button>`;
   const content=m.deletedAt?'This message was deleted.':esc(m.text).replace(/(^|\s)(@[A-Za-z0-9_]{2,20})/g,'$1<strong class="mention">$2</strong>');
+  const isSpamton=spamtonAccount(m.username||m.name);
+  const spamtonReplay=isSpamton&&!m.deletedAt&&m.optimisticStatus!=='sending'&&m.optimisticStatus!=='failed'?`<button type="button" class="spamton-replay-button" data-spamton-replay="${esc(m.id)}" aria-label="Replay Spamton message animation and voice">↻ Replay</button>`:'';
   const replyPreview=m.replyTo?`<button class="reply-preview" data-jump="${esc(m.replyTo)}" data-reply-username="${esc(String(m.replyUsername||'').trim().replace(/^@/,'').toLowerCase())}">↪ ${esc(m.replyUsername||'Reply')} · ${m.replyDeletedAt?'Deleted message':esc(m.replyText||'Original message')}</button>`:'';
   const statusClass=m.optimisticStatus==='failed'?'failed':m.optimisticStatus==='sending'?'pending':'';
-  box.insertAdjacentHTML('beforeend',`<article class="message ${mine?'mine':''} ${m.deletedAt?'deleted':''} ${statusClass}" data-msg-id="${esc(m.id)}" data-user-id="${esc(m.userId||'')}" data-avatar-name="${esc(m.username||m.name||'User')}" data-avatar-username="${esc(m.username||m.name||'User')}"><div class="avatar">${avatarContent(m.username||m.name,m.avatarColor,m.username||m.name)}</div><div class="message-main"><div class="message-meta"><button class="message-author profile-link" data-profile="${esc(m.username||m.name)}">${esc(m.name)}</button><span class="message-time">${tm}</span>${m.editedAt&&!m.deletedAt?'<span class="message-edited">edited</span>':''}</div>${replyPreview}<div class="message-text">${content}</div><div class="message-tools">${reactions}${actions}</div></div></article>`);
+  box.insertAdjacentHTML('beforeend',`<article class="message ${mine?'mine':''} ${m.deletedAt?'deleted':''} ${statusClass}" data-msg-id="${esc(m.id)}" data-user-id="${esc(m.userId||'')}" data-avatar-name="${esc(m.username||m.name||'User')}" data-avatar-username="${esc(m.username||m.name||'User')}"><div class="avatar">${avatarContent(m.username||m.name,m.avatarColor,m.username||m.name)}</div><div class="message-main"><div class="message-meta"><button class="message-author profile-link" data-profile="${esc(m.username||m.name)}">${esc(m.name)}</button><span class="message-time">${tm}</span>${m.editedAt&&!m.deletedAt?'<span class="message-edited">edited</span>':''}</div>${replyPreview}<div class="message-text">${content}</div><div class="message-tools">${reactions}${actions}${spamtonReplay}</div></div></article>`);
  });
  box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editMessage(b.dataset.edit));
  box.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>deleteMessage(b.dataset.delete));
@@ -315,7 +544,10 @@ function renderMessages(){
  box.querySelectorAll('[data-report]').forEach(b=>b.onclick=()=>reportMessage(b.dataset.report));
  box.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>pinMessage(b.dataset.pin));
  box.querySelectorAll('[data-jump]').forEach(b=>b.onclick=()=>jumpToMessage(b.dataset.jump));
+ box.querySelectorAll('[data-spamton-replay]').forEach(b=>b.onclick=()=>replaySpamtonRoomMessage(b.dataset.spamtonReplay));
  box.scrollTop=box.scrollHeight;
+ syncSpamtonAnimationTargets('chat',S.room);
+ maybeAnimateLatestSpamtonRoomMessage(list);
 }
 async function loadMessages(forceRender=false, useIncremental=null){
  if(!sessionToken)return;
@@ -568,10 +800,14 @@ function renderDmThread(state, forceBottom=false){
   const status=m.failed?'<span>Not sent</span>':m.pending?'<span>Sending…</span>':'';
   const retry=m.failed?`<button class="btn" data-dm-retry="${esc(m.id)}" style="margin-top:5px;padding:3px 7px;font-size:11px">Retry</button>`:'';
   const senderUsername=String(mine?S.user:(m.username||m.sender_username||'')).trim().replace(/^@/,'').toLowerCase();
-  return `<div class="dm-row" data-sender-username="${esc(senderUsername)}" style="justify-content:${mine?'flex-end':'flex-start'}">${mine?'':`<div class="avatar dm-message-avatar">${avatarContent(m.display_name||m.username||'User',m.avatar_color,m.username)}</div>`}<div class="dm-bubble ${mine?'mine':'other'} ${m.pending?'pending':''}"><div class="dm-meta"><strong>${esc(mine?'You':(m.display_name||m.username||'User'))}</strong><span>${dmTime(m.created_at)}</span>${status}</div><div class="dm-text">${esc(messageText)}</div>${retry}</div>${mine?`<div class="avatar dm-message-avatar">${avatarContent(S.profile.displayName||S.user,S.profile.avatarColor,S.user)}</div>`:''}</div>`;
+  const spamtonReplay=senderUsername==='spamton'&&!deleted&&!m.pending&&!m.failed?`<button type="button" class="spamton-replay-button" data-spamton-dm-replay="${esc(m.id)}" data-conversation-id="${esc(state.id)}" aria-label="Replay Spamton direct message animation and voice">↻ Replay</button>`:'';
+  return `<div class="dm-row" data-dm-msg-id="${esc(m.id)}" data-sender-username="${esc(senderUsername)}" style="justify-content:${mine?'flex-end':'flex-start'}">${mine?'':`<div class="avatar dm-message-avatar">${avatarContent(m.display_name||m.username||'User',m.avatar_color,m.username)}</div>`}<div class="dm-bubble ${mine?'mine':'other'} ${m.pending?'pending':''}"><div class="dm-meta"><strong>${esc(mine?'You':(m.display_name||m.username||'User'))}</strong><span>${dmTime(m.created_at)}</span>${status}</div><div class="dm-text">${esc(messageText)}</div>${spamtonReplay}${retry}</div>${mine?`<div class="avatar dm-message-avatar">${avatarContent(S.profile.displayName||S.user,S.profile.avatarColor,S.user)}</div>`:''}</div>`;
  }).join(''):'<div class="notice" style="text-align:center;margin:auto">No messages yet. Say hello.</div>';
  if(nearBottom)box.scrollTop=box.scrollHeight;
  box.querySelectorAll('[data-dm-retry]').forEach(b=>b.onclick=()=>retryDirectMessage(state,b.dataset.dmRetry));
+ box.querySelectorAll('[data-spamton-dm-replay]').forEach(b=>b.onclick=()=>replaySpamtonDmMessage(b.dataset.conversationId,b.dataset.spamtonDmReplay));
+ syncSpamtonAnimationTargets('dm',state.id);
+ maybeAnimateLatestSpamtonDmMessage(orderedMessages,state);
  const locked=$('dmBlockedNotice'), form=$('dmComposerForm');
  if(locked){locked.classList.toggle('hidden',!state.blocked)}
  if(form){form.classList.toggle('hidden',!!state.blocked)}
