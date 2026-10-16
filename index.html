@@ -251,8 +251,12 @@ const BUILTIN_GIFS = [
 ];
 function builtinGifId(value){const text=String(value||'').trim();const patterns=[/^\[\[\s*churchat[-:]gif\s*:?\s*([1-6])\s*\]\]$/i,/^churchat[-:]gif\s*:?\s*([1-6])$/i,/^gif\s*([1-6])$/i];for(const pattern of patterns){const m=text.match(pattern);if(m)return Number(m[1])}return 0}
 const BUILTIN_IMAGES = [
- {id:1,label:'Image 1',file:'./images/image1.png'},
- {id:2,label:'Image 2',file:'./images/image2.png'},
+ {id:1,label:'Chilla',file:'./images/Chilla.jpg'},
+ {id:2,label:'Brat',file:'./images/brat.webp'},
+{id:1,label:'Jonkler',file:'./images/jonkler better.jpg'},
+ {id:2,label:'Shrek Harvey',file:'./images/shrek harvey.jpeg'},
+   {id:2,label:'Sped',file:'./images/speed.jpg'},
+
 ];
 function builtinImageId(value){const text=String(value||'').trim();const patterns=[/^\[\[\s*churchat[-:]image\s*:?\s*([1-6])\s*\]\]$/i,/^churchat[-:]image\s*:?\s*([1-6])$/i,/^image\s*([1-6])$/i];for(const pattern of patterns){const m=text.match(pattern);if(m)return Number(m[1])}return 0}
 function displayMessageText(value){const gifId=builtinGifId(value);if(gifId)return 'GIF '+gifId;const imageId=builtinImageId(value);return imageId?'Image '+imageId:String(value||'')}
