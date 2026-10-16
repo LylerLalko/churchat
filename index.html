@@ -245,11 +245,14 @@ const pendingSpamtonAnimations=new Map();
 let spamtonVoiceAudio=null, spamtonAudioReady=false, spamtonAudioPriming=null;
 const ico=n=>`<svg class="ico" aria-hidden="true"><use href="#${n}"/></svg>`, init=n=>(n||'?').trim().slice(0,1).toUpperCase(), esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const BUILTIN_GIFS = [
- {id:1,label:'Tenna Dance',file:'./gifs/tennadance.gif'},
- {id:2,label:'Tenna Suit Dance',file:'./gifs/tennasuitdance.gif'},
- {id:3,label:'SusieDance',file:'./gifs/susiedance.gif'},
+ {id:1,label:'GIF 1',file:'./gifs/gif1.gif'},
+ {id:2,label:'GIF 2',file:'./gifs/gif2.gif'},
+ {id:3,label:'GIF 3',file:'./gifs/gif3.gif'},
+ {id:4,label:'GIF 4',file:'./gifs/gif4.gif'},
+ {id:5,label:'GIF 5',file:'./gifs/gif5.gif'},
+ {id:6,label:'GIF 6',file:'./gifs/gif6.gif'}
 ];
-function builtinGifId(value){const m=String(value||'').match(/^\[\[churchat-gif:([1-6])\]\]$/);return m?Number(m[1]):0}
+function builtinGifId(value){const text=String(value||'').trim();const patterns=[/^\[\[\s*churchat[-:]gif\s*:?\s*([1-6])\s*\]\]$/i,/^churchat[-:]gif\s*:?\s*([1-6])$/i,/^gif\s*([1-6])$/i];for(const pattern of patterns){const m=text.match(pattern);if(m)return Number(m[1])}return 0}
 function displayMessageText(value){const id=builtinGifId(value);return id?'GIF '+id:String(value||'')}
 function showGifPicker(){
  if(!sessionToken){toast('Sign in with an account to send GIFs.');return}
@@ -259,7 +262,7 @@ function showGifPicker(){
    const id=Number(b.dataset.sendGif);
    closeModal();
    const input=$('message');
-   input.value='[[churchat-gif:'+id+']]';
+   input.value='GIF '+id;
    $('messageForm').requestSubmit();
   });
  });
