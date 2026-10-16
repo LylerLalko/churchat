@@ -226,8 +226,12 @@ let dmPollTimer=null, dmCurrent=null;
 const SPAMTON_VOICE_URL='./spamton.mp3';
 // ChurChat music playlist: add your uploaded audio files below.
 const MUSIC_TRACKS = [
-  // {title:'Song One', file:'./music/song-one.mp3'},
-  // {title:'Song Two', file:'./music/song-two.mp3'},
+  {title:'Spider Dance - Toby Fox', file:'./music/spiderdance.mp3'},
+  {title:'Death By Glamour - Toby Fox', file:'./music/deathbyglamour.mp3'},
+     {title:'Rude Buster - Toby Fox', file:'./music/rudebuster.mp3'},
+  {title:'Core - Toby Fox', file:'./music/core.mp3'},
+     {title:'Aria Math - C418', file:'./music/ariamath.mp3'},
+
 ];
 let musicAudio = null;
 let currentMusicIndex = -1;
@@ -306,8 +310,10 @@ const STATIC_AVATAR_OVERRIDES = {
 
   // Add more people below
   lylerlalko: { src: './assets/avatars/lylerlalko.webp' },
-  username2: { src: './assets/avatars/username2.png' },
-  username3: { src: './assets/avatars/username3.jpg' },
+  scythe: { src: './assets/avatars/scythe.png' },
+  doomslayer7912: { src: './assets/avatars/doomslayer7912.jpg' },
+   ded_zudley_: { src: './assets/avatars/ded_zudley_.jpg' },
+  mranttenna: { src: './assets/avatars/mranttenna.jpg' },
 };
 
 function avatarContent(username, color = '#8b72c7', accountUsername = '') {
@@ -338,7 +344,7 @@ function roomName(id){return roomById(id).name||id}
 async function loadRooms(){if(!sessionToken)return;const data=await api('/api/rooms');const rooms=Array.isArray(data.rooms)?data.rooms:[];if(!rooms.some(r=>r.id==='general'))rooms.unshift({id:'general',name:'general',is_public:1,is_member:1});S.rooms=rooms.filter(r=>Number(r.is_member)===1||r.id==='general');S.unreadCounts=Object.fromEntries(S.rooms.map(r=>[r.id,Number(r.unread_count)||0]));lastUnreadRefreshAt=Date.now();updateTabFavicon();if(!S.rooms.some(r=>r.id===S.room))S.room='general';renderRooms();renderMessages()}
 function renderRooms(){$('roomList').innerHTML=S.rooms.map(r=>{const unread=Number(S.unreadCounts[r.id]??r.unread_count??0);return `<button class="room-btn ${r.id===S.room?'active':''}" data-room="${esc(r.id)}">${ico(r.id==='general'||Number(r.is_public)===1?'hash':'lock')}<span class="room-name">${esc(r.name)}</span>${unread>0&&r.id!==S.room?`<span class="room-count unread">${unread>99?'99+':unread}</span>`:''}</button>`}).join('');$('roomList').querySelectorAll('[data-room]').forEach(b=>b.onclick=()=>changeRoom(b.dataset.room))}
 function changeRoom(id){if(typingActive)sendTyping(false);try{localStorage.setItem('churchat-draft:'+S.room,$('message').value||'')}catch(e){}clearReply();S.room=id;const r=roomById(id);$('roomTitle').textContent=(id==='general'||Number(r.is_public)===1?'# ':'🔒 ')+r.name;$('roomDesc').textContent=r.topic|| (id==='general'?'The public lobby · a good place to start':(Number(r.is_public)===1?'Public room · open to everyone':'Private room · invite-only'));$('message').placeholder='Message '+(id==='general'||Number(r.is_public)===1?'#':'🔒')+r.name+'…';try{$('message').value=localStorage.getItem('churchat-draft:'+id)||'';$('message').dispatchEvent(new Event('input'))}catch(e){}renderRooms();renderMessages();if(sessionToken)loadMessages(true);closeSide()}
-const REACTION_CHOICES=['👍','❤️','😂','😮','😢','🎉','🔥','👀','👎','🙏'];
+const REACTION_CHOICES=['👍','❤️','😂','😮','😢','🎉','🔥','👀','👎','🙏','😭','💀','🗿','🥀','💔'];
 
 function spamtonAccount(value){return String(value||'').trim().replace(/^@/,'').toLowerCase()==='spamton'}
 function spamtonTargetKey(kind,roomId,conversationId,id){return kind==='chat'?'chat|'+String(roomId)+'|'+String(id):'dm|'+String(conversationId)+'|'+String(id)}
