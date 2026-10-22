@@ -249,7 +249,8 @@ const BUILTIN_GIFS = [
  {id:1,label:'Tenna Dance',file:'./gifs/tennadance.gif'},
  {id:2,label:'Tenna Suit Dance',file:'./gifs/tennasuitdance.gif'},
  {id:3,label:'SusieDance',file:'./gifs/susiedance.gif'},
-   {id:4,label:'Speed Thinking',file:'./gifs/speed.gif'},
+   {id:4,label:'Speed Agree',file:'./gifs/speed.gif'},
+   {id:5,label:'Speed Thinking',file:'./gifs/speedphone.gif'},
 ];
 function builtinGifId(value){const text=String(value||'').trim();const patterns=[/^\[\[\s*churchat[-:]gif\s*:?\s*([1-6])\s*\]\]$/i,/^churchat[-:]gif\s*:?\s*([1-6])$/i,/^gif\s*([1-6])$/i];for(const pattern of patterns){const m=text.match(pattern);if(m)return Number(m[1])}return 0}
 const BUILTIN_IMAGES = [
