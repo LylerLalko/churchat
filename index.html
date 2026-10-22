@@ -257,6 +257,8 @@ const BUILTIN_IMAGES = [
 {id:3,label:'Jonkler',file:'./assets/imgs/jonkler better.jpg'},
  {id:4,label:'Shrek Harvey',file:'./assets/imgs/shrek harvey.jpeg'},
    {id:5,label:'Sped',file:'./assets/imgs/speed.jpg'},
+   {id:6, label:'Albert Epstein',file:'./assets/imgs/nicola tesla + albert epstein.jpg'},
+   {id:7, label:'Pregnant Shrek',file:'./assets/imgs/shrok pregy.jpg'},
 
 ];
 function builtinImageId(value){const text=String(value||'').trim();const patterns=[/^\[\[\s*churchat[-:]image\s*:?\s*([1-6])\s*\]\]$/i,/^churchat[-:]image\s*:?\s*([1-6])$/i,/^image\s*([1-6])$/i];for(const pattern of patterns){const m=text.match(pattern);if(m)return Number(m[1])}return 0}
